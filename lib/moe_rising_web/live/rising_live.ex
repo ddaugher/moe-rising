@@ -28,6 +28,44 @@ defmodule MoeRisingWeb.MoeLive do
 
   defp source_bg_color(_, _), do: "bg-gray-50 border-gray-200"
 
+  defp gate_bar_color(prob, probs) when is_number(prob) and is_list(probs) do
+    # Debug output
+    IO.puts("GATE BAR COLOR DEBUG:")
+    IO.puts("  prob: #{prob}")
+    IO.puts("  probs: #{inspect(probs)}")
+
+    # Sort probabilities and find the rank of our specific probability
+    sorted_probs = Enum.sort(probs, :desc)
+    IO.puts("  sorted_probs: #{inspect(sorted_probs)}")
+
+    # Find all positions where this probability appears
+    positions =
+      sorted_probs
+      |> Enum.with_index()
+      |> Enum.filter(fn {p, _} -> p == prob end)
+      |> Enum.map(fn {_, index} -> index end)
+
+    # Use the first (highest) rank for this probability
+    rank = List.first(positions) || 0
+    total = length(probs)
+    percentile = rank / total
+
+    IO.puts("  rank: #{rank}, total: #{total}, percentile: #{percentile}")
+
+    color = cond do
+      rank == 0 -> "bg-green-500"
+      rank == 1 -> "bg-yellow-500"
+      rank == 2 -> "bg-orange-500"
+      rank == 3 -> "bg-red-500"
+      true -> "bg-gray-500"
+    end
+
+    IO.puts("  color: #{color}")
+    color
+  end
+
+  defp gate_bar_color(_, _), do: "bg-gray-500"
+
   def handle_event("route", %{"q" => q}, socket) do
     # Capture the LiveView process ID
     liveview_pid = self()
@@ -41,13 +79,6 @@ defmodule MoeRisingWeb.MoeLive do
 
     # Start async task to avoid blocking the LiveView
     task = Task.async(fn -> Router.route(q, log_pid: liveview_pid) end)
-
-    # Debug: print current state
-    IO.puts(
-      "LIVEVIEW: Route event triggered, current log_messages: #{length(socket.assigns.log_messages)}"
-    )
-
-    IO.puts("LIVEVIEW: Process ID: #{inspect(liveview_pid)}")
 
     {:noreply,
      socket
@@ -70,11 +101,6 @@ defmodule MoeRisingWeb.MoeLive do
   def handle_info({:log_message, message}, socket) do
     timestamp = DateTime.utc_now() |> DateTime.to_time() |> Time.to_string()
     log_entry = "#{timestamp} - #{message}"
-
-    # Debug: print to console to verify messages are being received
-    IO.puts("LIVEVIEW: Received log message: #{log_entry}")
-    IO.puts("LIVEVIEW: Current log_messages count: #{length(socket.assigns.log_messages)}")
-    IO.puts("LIVEVIEW: Process ID: #{inspect(self())}")
 
     {:noreply,
      socket
@@ -157,14 +183,14 @@ defmodule MoeRisingWeb.MoeLive do
               <h2 class="text-xl font-semibold mb-3">Gate Probabilities</h2>
               <div class="space-y-2">
                 <%= for {name, prob} <- @res.gate.ranked do %>
-                  <div>
+                  <div class="rounded border p-3">
                     <div class="flex justify-between text-sm">
                       <span class="font-medium">{name}</span>
                       <span>{:io_lib.format("~.2f", [prob])}</span>
                     </div>
-                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
                       <div
-                        class="h-2 bg-orange-500 rounded-full transition-all duration-300"
+                        class={"h-2 #{gate_bar_color(prob, Enum.map(@res.gate.ranked, fn {_, p} -> p end))} rounded-full transition-all duration-300"}
                         style={"width: #{Float.round(prob*100, 1)}%"}
                       >
                       </div>

@@ -9,15 +9,18 @@
     monospace;
     --color-red-50: oklch(97.1% 0.013 17.38);
     --color-red-200: oklch(88.5% 0.062 18.334);
+    --color-red-500: oklch(63.7% 0.237 25.331);
     --color-orange-50: oklch(98% 0.016 73.684);
     --color-orange-200: oklch(90.1% 0.076 70.697);
     --color-orange-500: oklch(70.5% 0.213 47.604);
     --color-orange-600: oklch(64.6% 0.222 41.116);
     --color-yellow-50: oklch(98.7% 0.026 102.212);
     --color-yellow-200: oklch(94.5% 0.129 101.54);
+    --color-yellow-500: oklch(79.5% 0.184 86.047);
     --color-green-50: oklch(98.2% 0.018 155.826);
     --color-green-200: oklch(92.5% 0.084 155.995);
     --color-green-400: oklch(79.2% 0.209 151.711);
+    --color-green-500: oklch(72.3% 0.219 149.579);
     --color-gray-50: oklch(98.5% 0.002 247.839);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-500: oklch(55.1% 0.027 264.364);
@@ -1766,8 +1769,14 @@
   .bg-gray-200 {
     background-color: var(--color-gray-200);
   }
+  .bg-gray-500 {
+    background-color: var(--color-gray-500);
+  }
   .bg-green-50 {
     background-color: var(--color-green-50);
+  }
+  .bg-green-500 {
+    background-color: var(--color-green-500);
   }
   .bg-orange-50 {
     background-color: var(--color-orange-50);
@@ -1778,11 +1787,17 @@
   .bg-red-50 {
     background-color: var(--color-red-50);
   }
+  .bg-red-500 {
+    background-color: var(--color-red-500);
+  }
   .bg-white {
     background-color: var(--color-white);
   }
   .bg-yellow-50 {
     background-color: var(--color-yellow-50);
+  }
+  .bg-yellow-500 {
+    background-color: var(--color-yellow-500);
   }
   .fill-base-content\/40 {
     fill: var(--color-base-content);
