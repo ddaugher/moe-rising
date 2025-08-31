@@ -99,6 +99,34 @@
 /* Use the data attribute for dark mode  */
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+/* Remove input focus highlighting */
+textarea:focus,
+input:focus {
+  --tw-ring-color: transparent !important;
+  border-color: inherit !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+textarea:focus-visible,
+input:focus-visible {
+  --tw-ring-color: transparent !important;
+  border-color: inherit !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* More specific selectors to override DaisyUI */
+textarea:focus,
+input:focus,
+textarea:focus-within,
+input:focus-within {
+  --input-color: inherit !important;
+  border-color: inherit !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
