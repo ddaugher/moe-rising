@@ -1,0 +1,8 @@
+
+> If you'd like to check it out, you can find this episode on [Spotify](https://creators.spotify.com/pod/profile/a20-podcast/episodes/S3E12--Angelo-Mazzocco-A-Career-of-Helping-Others-e36r3c2){:target="\_blank"}. It's also on [Apple Podcasts](https://podcasts.apple.com/us/podcast/augustwenty-podcast/id1610048773){:target="\_blank"} and on our podcast [landing page](https://podcasters.spotify.com/pod/show/a20-podcast){:target="\_blank"}
+
+### **Podcast Summary: Angelo Mazzocco - A Career of Helping Others**
+
+Season 3, Episode 10 of the August 20 Podcast welcomes longtime friend and respected tech leader Angelo Mazzocco. After decades as a CIO, entrepreneur, and connector of people, Angelo shares his journey from “full-time geek” to trusted advisor, why retirement didn’t stick, and how relationships—not technology—have always been his real passion. DJ and Mary swap personal stories about Angelo’s impact on their careers, dig into lessons learned over 40+ years in leadership, and explore why Columbus, Ohio’s growth creates once-in-a-generation opportunities. It’s a conversation about mentorship, resilience, and the power of showing up for people.
+
+> If you'd like to check it out, you can find this episode on [Spotify](https://creators.spotify.com/pod/profile/a20-podcast/episodes/S3E12--Angelo-Mazzocco-A-Career-of-Helping-Others-e36r3c2){:target="\_blank"}. It's also on [Apple Podcasts](https://podcasts.apple.com/us/podcast/augustwenty-podcast/id1610048773){:target="\_blank"} and on our podcast [landing page](https://podcasters.spotify.com/pod/show/a20-podcast){:target="\_blank"}

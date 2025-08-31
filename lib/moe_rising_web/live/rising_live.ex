@@ -2,75 +2,176 @@ defmodule MoeRisingWeb.MoeLive do
   use MoeRisingWeb, :live_view
   alias MoeRising.Router
 
-  @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, q: "", res: nil)}
+    {:ok, assign(socket, q: "", res: nil, loading: false)}
   end
 
-  @impl true
   def handle_event("route", %{"q" => q}, socket) do
-    res = Router.route(q, top_k: 2)
-    {:noreply, assign(socket, q: q, res: res)}
+    # Start async task to avoid blocking the LiveView
+    task = Task.async(fn -> Router.route(q) end)
+
+    {:noreply,
+     socket
+     |> assign(q: q, loading: true)
+     |> assign(:task, task)}
   end
 
-  @impl true
+  def handle_info({ref, result}, %{assigns: %{task: %Task{ref: ref}}} = socket) do
+    Process.demonitor(ref, [:flush])
+
+    {:noreply,
+     socket
+     |> assign(res: result, loading: false)
+     |> assign(:task, nil)}
+  end
+
+  def handle_info({:DOWN, ref, :process, _pid, reason}, %{assigns: %{task: %Task{ref: ref}}} = socket) do
+    {:noreply,
+     socket
+     |> assign(loading: false, res: %{error: "Task failed: #{inspect(reason)}"})
+     |> assign(:task, nil)}
+  end
+
   def render(assigns) do
     ~H"""
-    <div class="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 class="text-3xl font-bold">Mixture‑of‑Experts Demo</h1>
-      <p class="text-gray-600">Type a prompt; the gate will score experts and route to the top‑K.</p>
-
-      <form phx-submit="route" class="space-y-3">
-        <textarea
-          name="q"
-          rows="4"
-          class="w-full border rounded p-3"
-          placeholder="e.g., Write a Phoenix LiveView that shows a counter with buttons..."
-        ><%= @q %></textarea>
-        <button class="px-4 py-2 rounded bg-indigo-600 text-white">Run</button>
-      </form>
-
-      <%= if @res do %>
-        <div class="space-y-4">
-          <h2 class="text-xl font-semibold">Gate Probabilities</h2>
-          <div class="space-y-2">
-            <%= for {name, prob} <- @res.gate.ranked do %>
-              <div>
-                <div class="flex justify-between text-sm">
-                  <span class="font-medium">{name}</span>
-                  <span>{:io_lib.format("~.2f", [prob])}</span>
-                </div>
-                <div class="w-full h-2 bg-gray-200 rounded">
-                  <div class="h-2 bg-indigo-500 rounded" style={"width: #{Float.round(prob*100, 1)}%"}>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-          </div>
-
-          <h2 class="text-xl font-semibold">Expert Outputs (Top‑2)</h2>
-          <div class="grid md:grid-cols-2 gap-4">
-            <%= for r <- @res.results do %>
-              <div class="border rounded p-3 shadow-sm">
-                <div class="text-sm text-gray-500">
-                  Expert: <span class="font-medium">{r.name}</span>
-                  · p≈{:io_lib.format("~.2f", [r.prob])} · tokens: {r.tokens}
-                </div>
-                <pre class="whitespace-pre-wrap text-sm mt-2"> <%= r.output %> </pre>
-              </div>
-            <% end %>
-          </div>
-
-          <h2 class="text-xl font-semibold">Final Answer</h2>
-          <div class="border rounded p-3">
-            <div class="text-sm text-gray-500">
-              strategy: {@res.aggregate.strategy} (from: {@res.aggregate.from})
-            </div>
-            <pre class="whitespace-pre-wrap text-sm mt-2"> <%= @res.aggregate.output %> </pre>
-          </div>
+    <Layouts.app flash={@flash}>
+      <div class="w-full p-6 space-y-6">
+        <div class="text-center">
+          <h1 class="text-3xl font-bold">Mixture of Experts Demo</h1>
+          <p class="text-gray-600">
+            Type a prompt; the gate will score experts and route to the topK.
+          </p>
         </div>
-      <% end %>
-    </div>
+
+        <.form for={%{}} phx-submit="route" class="space-y-3">
+          <div>
+            <textarea
+              name="q"
+              rows="4"
+              class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="e.g., What is augustwenty's stance on professional standards?"
+            ><%= @q %></textarea>
+          </div>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            disabled={@loading}
+          >
+            <%= if @loading do %>
+              <div class="flex items-center space-x-2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Processing...</span>
+              </div>
+            <% else %>
+              Run
+            <% end %>
+          </button>
+        </.form>
+
+        <%= if @loading do %>
+          <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Processing your query...</p>
+            <p class="text-sm text-gray-500 mt-2">This may take up to 60 seconds</p>
+          </div>
+        <% end %>
+
+        <%= if @res do %>
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-xl font-semibold mb-3">Gate Probabilities</h2>
+              <div class="space-y-2">
+                <%= for {name, prob} <- @res.gate.ranked do %>
+                  <div>
+                    <div class="flex justify-between text-sm">
+                      <span class="font-medium"><%= name %></span>
+                      <span><%= :io_lib.format("~.2f", [prob]) %></span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        class="h-2 bg-indigo-500 rounded-full transition-all duration-300"
+                        style={"width: #{Float.round(prob*100, 1)}%"}
+                      >
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <div>
+              <h2 class="text-xl font-semibold mb-3">Expert Outputs Top2</h2>
+              <div class="grid md:grid-cols-2 gap-4">
+                <%= for r <- @res.results do %>
+                  <div class="border rounded-lg p-4 shadow-sm bg-white">
+                    <div class="text-sm text-gray-500 mb-2">
+                      Expert: <span class="font-medium"><%= r.name %></span> ·
+                      p≈<%= :io_lib.format("~.2f", [r.prob]) %> ·
+                      tokens: <%= r.tokens %>
+                    </div>
+                    <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= r.output %></pre>
+
+                    <%= if Map.has_key?(r, :sources) and is_list(r.sources) do %>
+                      <div class="mt-3 space-y-2">
+                        <div class="text-sm font-medium">Retrieved Sources</div>
+                        <div class="grid gap-2">
+                          <%= for s <- r.sources do %>
+                            <div class="rounded border p-2 bg-gray-50">
+                              <div class="flex items-center justify-between text-xs text-gray-600">
+                                <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
+                                <a
+                                  href={s.url}
+                                  class="underline hover:text-indigo-600"
+                                  target="_blank"
+                                >
+                                  open
+                                </a>
+                              </div>
+                              <div class="text-sm font-semibold mt-1"><%= s.title %></div>
+                              <div class="text-xs text-gray-700 mt-1"><%= s.preview %>…</div>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <div>
+              <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
+              <div class="border rounded-lg p-4 bg-white">
+                <div class="text-sm text-gray-500 mb-2">
+                  strategy: <%= @res.aggregate.strategy %> (from: <%= @res.aggregate.from %>)
+                </div>
+                <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= @res.aggregate.output %></pre>
+              </div>
+            </div>
+
+            <%= if rag = Enum.find(@res.results, fn rr -> rr.name == "RAG" and Map.has_key?(rr, :sources) end) do %>
+              <div class="space-y-2">
+                <h2 class="text-xl font-semibold mb-3">RAG Retrieved Sources</h2>
+                <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <%= for s <- rag.sources do %>
+                    <div class="rounded-lg border p-3 shadow-sm bg-white">
+                      <div class="flex items-center justify-between text-xs text-gray-600">
+                        <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
+                        <a href={s.url} class="underline hover:text-indigo-600" target="_blank">
+                          open
+                        </a>
+                      </div>
+                      <div class="text-sm font-semibold mt-1"><%= s.title %></div>
+                      <div class="text-xs text-gray-700 mt-1"><%= s.preview %>…</div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </Layouts.app>
     """
   end
 end

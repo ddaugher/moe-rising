@@ -1,13 +1,14 @@
 defmodule MoeRising.Router do
   alias MoeRising.Gate
   alias MoeRising.LLMClient
-  alias MoeRising.Experts.{Writing, Code, Math, DataViz}
+  alias MoeRising.Experts.{Writing, Code, Math, DataViz, RAG}
 
   @experts %{
     "Writing" => Writing,
     "Code" => Code,
     "Math" => Math,
-    "DataViz" => DataViz
+    "DataViz" => DataViz,
+    "RAG" => RAG
   }
 
   @default_top_k 2
@@ -25,12 +26,32 @@ defmodule MoeRising.Router do
       chosen
       |> Task.async_stream(
         fn {name, prob, mod} ->
-          case mod.call(prompt, []) do
-            {:ok, %{output: out, tokens: t}} -> %{name: name, prob: prob, output: out, tokens: t}
-            {:error, reason} -> %{name: name, prob: prob, output: inspect(reason), tokens: 0}
+          IO.inspect({:calling, name}, label: "Expert")
+
+          try do
+            case mod.call(prompt, []) do
+              {:ok, %{output: out, tokens: t} = result} ->
+                IO.inspect({:done, name}, label: "Expert")
+
+                %{
+                  name: name,
+                  prob: prob,
+                  output: out,
+                  tokens: t,
+                  sources: Map.get(result, :sources)
+                }
+
+              {:error, reason} ->
+                IO.inspect({:error, name, reason}, label: "Expert")
+                %{name: name, prob: prob, output: "Error: #{inspect(reason)}", tokens: 0}
+            end
+          rescue
+            e ->
+              IO.inspect({:exception, name, e}, label: "Expert")
+              %{name: name, prob: prob, output: "Exception: #{inspect(e)}", tokens: 0}
           end
         end,
-        timeout: 30_000
+        timeout: 60_000
       )
       |> Enum.map(fn {:ok, r} -> r end)
 
