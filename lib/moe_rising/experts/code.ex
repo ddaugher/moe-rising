@@ -13,7 +13,12 @@ defmodule MoeRising.Experts.Code do
     log_pid = Keyword.get(opts, :log_pid)
 
     if log_pid do
-      MoeRising.Logging.log(log_pid, "Code", "Starting code expert", "prompt length: #{String.length(prompt)}")
+      MoeRising.Logging.log(
+        log_pid,
+        "Code",
+        "Starting code expert",
+        "prompt length: #{String.length(prompt)}"
+      )
     end
 
     sys =
@@ -22,7 +27,12 @@ defmodule MoeRising.Experts.Code do
     %{content: out, tokens: t} = LLMClient.chat!(sys, prompt)
 
     if log_pid do
-      MoeRising.Logging.log(log_pid, "Code", "Completed", "tokens: #{t}, output length: #{String.length(out)}")
+      MoeRising.Logging.log(
+        log_pid,
+        "Code",
+        "Completed",
+        "tokens: #{t}, output length: #{String.length(out)}"
+      )
     end
 
     {:ok, %{output: out, tokens: t}}

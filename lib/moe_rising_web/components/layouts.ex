@@ -37,7 +37,11 @@ defmodule MoeRisingWeb.Layouts do
     ~H"""
     <header class="navbar px-4 sm:px-6 lg:px-8">
       <div class="flex-1">
-        <a href="https://www.augustwenty.com/" class="flex-1 flex w-fit items-center gap-2" target="_blank">
+        <a
+          href="https://www.augustwenty.com/"
+          class="flex-1 flex w-fit items-center gap-2"
+          target="_blank"
+        >
           <img src={~p"/images/a20-full-lockup-onlight.png"} width="120" />
           <span class="text-sm font-semibold">v1.0.0</span>
         </a>
@@ -48,7 +52,9 @@ defmodule MoeRisingWeb.Layouts do
             <a href="https://www.augustwenty.com/" class="btn btn-ghost" target="_blank">Website</a>
           </li>
           <li>
-            <a href="https://github.com/ddaugher/moe-rising" class="btn btn-ghost" target="_blank">GitHub</a>
+            <a href="https://github.com/ddaugher/moe-rising" class="btn btn-ghost" target="_blank">
+              GitHub
+            </a>
           </li>
           <li>
             <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">

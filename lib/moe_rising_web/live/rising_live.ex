@@ -15,6 +15,7 @@ defmodule MoeRisingWeb.MoeLive do
       "bg-green-50 border-green-200"
     else
       percentile = rank / total
+
       cond do
         percentile <= 0.2 -> "bg-green-50 border-green-200"
         percentile <= 0.4 -> "bg-yellow-50 border-yellow-200"
@@ -32,28 +33,48 @@ defmodule MoeRisingWeb.MoeLive do
     liveview_pid = self()
 
     # Add a log message for the new query
-    MoeRising.Logging.log(liveview_pid, "System", "Starting new query: #{String.slice(q, 0, 50)}#{if String.length(q) > 50, do: "...", else: ""}")
+    MoeRising.Logging.log(
+      liveview_pid,
+      "System",
+      "Starting new query: #{String.slice(q, 0, 50)}#{if String.length(q) > 50, do: "...", else: ""}"
+    )
+
+    # Start progress ticker and capture its PID
+    ticker_pid = MoeRising.ProgressTicker.start_ticker(liveview_pid, 350)
 
     # Start async task to avoid blocking the LiveView
     task = Task.async(fn -> Router.route(q, log_pid: liveview_pid) end)
 
     # Debug: print current state
-    IO.puts("LIVEVIEW: Route event triggered, current log_messages: #{length(socket.assigns.log_messages)}")
+    IO.puts(
+      "LIVEVIEW: Route event triggered, current log_messages: #{length(socket.assigns.log_messages)}"
+    )
+
     IO.puts("LIVEVIEW: Process ID: #{inspect(liveview_pid)}")
 
     {:noreply,
      socket
      |> assign(q: q, loading: true, res: nil)
-     |> assign(:task, task)}
+     |> assign(:task, task)
+     |> assign(:ticker_pid, ticker_pid)}
   end
 
   def handle_info({ref, result}, %{assigns: %{task: %Task{ref: ref}}} = socket) do
     Process.demonitor(ref, [:flush])
 
+    # Stop the progress ticker if it exists
+    if socket.assigns[:ticker_pid] do
+      MoeRising.ProgressTicker.stop_ticker(socket.assigns.ticker_pid)
+    end
+
+    # Add completion message
+    MoeRising.Logging.log(self(), "System", "Query completed successfully")
+
     {:noreply,
      socket
      |> assign(res: result, loading: false)
-     |> assign(:task, nil)}
+     |> assign(:task, nil)
+     |> assign(:ticker_pid, nil)}
   end
 
   def handle_info({:log_message, message}, socket) do
@@ -80,11 +101,29 @@ defmodule MoeRisingWeb.MoeLive do
      |> update(:log_messages, fn messages -> [log_entry | messages] end)}
   end
 
-  def handle_info({:DOWN, ref, :process, _pid, reason}, %{assigns: %{task: %Task{ref: ref}}} = socket) do
+  def handle_info({:check_loading, ticker_pid}, socket) do
+    # Respond with current loading status
+    send(ticker_pid, {:loading_status, socket.assigns.loading})
+    {:noreply, socket}
+  end
+
+  def handle_info(
+        {:DOWN, ref, :process, _pid, reason},
+        %{assigns: %{task: %Task{ref: ref}}} = socket
+      ) do
+    # Stop the progress ticker if it exists
+    if socket.assigns[:ticker_pid] do
+      MoeRising.ProgressTicker.stop_ticker(socket.assigns.ticker_pid)
+    end
+
+    # Add error message
+    MoeRising.Logging.log(self(), "System", "Query failed: #{inspect(reason)}")
+
     {:noreply,
      socket
      |> assign(loading: false, res: %{error: "Task failed: #{inspect(reason)}"})
-     |> assign(:task, nil)}
+     |> assign(:task, nil)
+     |> assign(:ticker_pid, nil)}
   end
 
   def render(assigns) do
@@ -125,19 +164,26 @@ defmodule MoeRisingWeb.MoeLive do
 
         <%= if @loading do %>
           <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4">
+            </div>
             <p class="text-gray-600">Processing your query...</p>
             <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
           </div>
         <% end %>
 
         <div class="border rounded-lg p-4 bg-black">
-          <h3 class="text-sm font-semibold mb-2 text-green-400">Activity Log (<%= length(@log_messages) %> messages)</h3>
-          <div id="activity-log" class="max-h-60 overflow-y-auto space-y-0 bg-black text-green-400 font-mono text-xs p-2" phx-hook="AutoScroll">
+          <h3 class="text-sm font-semibold mb-2 text-green-400">
+            Activity Log ({length(@log_messages)} messages)
+          </h3>
+          <div
+            id="activity-log"
+            class="max-h-60 overflow-y-auto space-y-0 bg-black text-green-400 font-mono text-xs p-2"
+            phx-hook="AutoScroll"
+          >
             <%= if length(@log_messages) > 0 do %>
               <%= for message <- Enum.reverse(@log_messages) do %>
                 <div class="text-green-400">
-                  <%= message %>
+                  {message}
                 </div>
               <% end %>
             <% else %>
@@ -156,8 +202,8 @@ defmodule MoeRisingWeb.MoeLive do
                 <%= for {name, prob} <- @res.gate.ranked do %>
                   <div>
                     <div class="flex justify-between text-sm">
-                      <span class="font-medium"><%= name %></span>
-                      <span><%= :io_lib.format("~.2f", [prob]) %></span>
+                      <span class="font-medium">{name}</span>
+                      <span>{:io_lib.format("~.2f", [prob])}</span>
                     </div>
                     <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
@@ -177,9 +223,9 @@ defmodule MoeRisingWeb.MoeLive do
                 <%= for r <- @res.results do %>
                   <div class="border rounded-lg p-4 shadow-sm bg-white">
                     <div class="text-sm text-gray-500 mb-2">
-                      Expert: <span class="font-medium"><%= r.name %></span> ·
-                      p≈<%= :io_lib.format("~.2f", [r.prob]) %> ·
-                      tokens: <%= r.tokens %>
+                      Expert: <span class="font-medium">{r.name}</span> ·
+                      p≈{:io_lib.format("~.2f", [r.prob])} ·
+                      tokens: {r.tokens}
                     </div>
                     <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= r.output %></pre>
 
@@ -190,7 +236,7 @@ defmodule MoeRisingWeb.MoeLive do
                           <%= for s <- r.sources do %>
                             <div class={"rounded border p-2 #{source_bg_color(s.score, Enum.map(r.sources, & &1.score))}"}>
                               <div class="flex items-center justify-between text-xs text-gray-600">
-                                <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
+                                <span>[{s.idx}] score ≈ {:io_lib.format("~.3f", [s.score])}</span>
                                 <a
                                   href={s.url}
                                   class="underline hover:text-orange-600"
@@ -199,8 +245,8 @@ defmodule MoeRisingWeb.MoeLive do
                                   open
                                 </a>
                               </div>
-                              <div class="text-sm font-semibold mt-1"><%= s.title %></div>
-                              <div class="text-xs text-gray-700 mt-1"><%= s.preview %>…</div>
+                              <div class="text-sm font-semibold mt-1">{s.title}</div>
+                              <div class="text-xs text-gray-700 mt-1">{s.preview}…</div>
                             </div>
                           <% end %>
                         </div>
@@ -215,7 +261,7 @@ defmodule MoeRisingWeb.MoeLive do
               <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
               <div class="border rounded-lg p-4 bg-white">
                 <div class="text-sm text-gray-500 mb-2">
-                  strategy: <%= @res.aggregate.strategy %> (from: <%= @res.aggregate.from %>)
+                  strategy: {@res.aggregate.strategy} (from: {@res.aggregate.from})
                 </div>
                 <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= @res.aggregate.output %></pre>
               </div>
@@ -228,13 +274,13 @@ defmodule MoeRisingWeb.MoeLive do
                   <%= for s <- rag.sources do %>
                     <div class={"rounded-lg border p-3 shadow-sm #{source_bg_color(s.score, Enum.map(rag.sources, & &1.score))}"}>
                       <div class="flex items-center justify-between text-xs text-gray-600">
-                        <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
+                        <span>[{s.idx}] score ≈ {:io_lib.format("~.3f", [s.score])}</span>
                         <a href={s.url} class="underline hover:text-orange-600" target="_blank">
                           open
                         </a>
                       </div>
-                      <div class="text-sm font-semibold mt-1"><%= s.title %></div>
-                      <div class="text-xs text-gray-700 mt-1"><%= s.preview %>…</div>
+                      <div class="text-sm font-semibold mt-1">{s.title}</div>
+                      <div class="text-xs text-gray-700 mt-1">{s.preview}…</div>
                     </div>
                   <% end %>
                 </div>

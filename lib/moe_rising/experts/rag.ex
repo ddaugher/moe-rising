@@ -13,22 +13,31 @@ defmodule MoeRising.Experts.RAG do
     log_pid = Keyword.get(opts, :log_pid)
 
     if log_pid do
-      MoeRising.Logging.log(log_pid, "RAG", "Starting RAG processing", "query length: #{String.length(prompt)}")
+      MoeRising.Logging.log(
+        log_pid,
+        "RAG",
+        "Starting RAG processing",
+        "query length: #{String.length(prompt)}"
+      )
     end
 
     ensure_index_loaded()
+
     if log_pid do
       MoeRising.Logging.log(log_pid, "RAG", "Index loaded successfully")
     end
 
     qvec = LLMClient.embed!([prompt]) |> List.first()
+
     if log_pid do
       MoeRising.Logging.log(log_pid, "RAG", "Query embedded", "vector length: #{length(qvec)}")
     end
 
     top = Store.search(qvec, 6)
+
     if log_pid do
       MoeRising.Logging.log(log_pid, "RAG", "Search completed", "found #{length(top)} results")
+
       Enum.with_index(top, 1)
       |> Enum.each(fn {{score, _chunk}, idx} ->
         MoeRising.Logging.log(log_pid, "RAG", "Result #{idx}", "score: #{Float.round(score, 4)}")
@@ -73,20 +82,34 @@ defmodule MoeRising.Experts.RAG do
   #{context}"
 
     if log_pid do
-      MoeRising.Logging.log(log_pid, "RAG", "Calling LLM", "context length: #{String.length(context)}")
+      MoeRising.Logging.log(
+        log_pid,
+        "RAG",
+        "Calling LLM",
+        "context length: #{String.length(context)}"
+      )
     end
+
     %{content: out, tokens: t} = LLMClient.chat!(sys, user)
+
     if log_pid do
-      MoeRising.Logging.log(log_pid, "RAG", "LLM completed", "tokens: #{t}, output length: #{String.length(out)}")
+      MoeRising.Logging.log(
+        log_pid,
+        "RAG",
+        "LLM completed",
+        "tokens: #{t}, output length: #{String.length(out)}"
+      )
     end
 
     {:ok, %{output: out, tokens: t, sources: sources_for_ui}}
   rescue
     e ->
       log_pid = Keyword.get(opts, :log_pid)
+
       if log_pid do
         MoeRising.Logging.log(log_pid, "RAG", "Error occurred", e)
       end
+
       {:error, e}
   end
 

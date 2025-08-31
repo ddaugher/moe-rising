@@ -24,7 +24,12 @@ defmodule MoeRising.Router do
       |> Enum.map(fn {name, p} -> {name, p, Map.fetch!(@experts, name)} end)
 
     if log_pid do
-      MoeRising.Logging.log(log_pid, "Gate", "Selected experts: #{Enum.map(chosen, fn {name, _, _} -> name end) |> Enum.join(", ")}")
+      MoeRising.Logging.log(
+        log_pid,
+        "Gate",
+        "Selected experts: #{Enum.map(chosen, fn {name, _, _} -> name end) |> Enum.join(", ")}"
+      )
+
       MoeRising.Logging.log(log_pid, "Gate", "Gate probabilities", gate.ranked)
     end
 
@@ -33,16 +38,31 @@ defmodule MoeRising.Router do
       |> Task.async_stream(
         fn {name, prob, mod} ->
           if log_pid do
-            MoeRising.Logging.log(log_pid, "Expert", "Starting #{name} (probability: #{Float.round(prob, 3)})")
+            MoeRising.Logging.log(
+              log_pid,
+              "Expert",
+              "Starting #{name} (probability: #{Float.round(prob, 3)})"
+            )
           end
 
           try do
-            case mod.call(prompt, [log_pid: log_pid]) do
+            case mod.call(prompt, log_pid: log_pid) do
               {:ok, %{output: out, tokens: t} = result} ->
                 if log_pid do
-                  MoeRising.Logging.log(log_pid, "Expert", "Completed #{name}", "tokens: #{t}, output length: #{String.length(out)}")
+                  MoeRising.Logging.log(
+                    log_pid,
+                    "Expert",
+                    "Completed #{name}",
+                    "tokens: #{t}, output length: #{String.length(out)}"
+                  )
+
                   if Map.has_key?(result, :sources) do
-                    MoeRising.Logging.log(log_pid, "Expert", "#{name} sources", "found #{length(result.sources)} sources")
+                    MoeRising.Logging.log(
+                      log_pid,
+                      "Expert",
+                      "#{name} sources",
+                      "found #{length(result.sources)} sources"
+                    )
                   end
                 end
 
@@ -58,6 +78,7 @@ defmodule MoeRising.Router do
                 if log_pid do
                   MoeRising.Logging.log(log_pid, "Expert", "Error in #{name}", reason)
                 end
+
                 %{name: name, prob: prob, output: "Error: #{inspect(reason)}", tokens: 0}
             end
           rescue
@@ -65,17 +86,23 @@ defmodule MoeRising.Router do
               if log_pid do
                 MoeRising.Logging.log(log_pid, "Expert", "Exception in #{name}", e)
               end
+
               %{name: name, prob: prob, output: "Exception: #{inspect(e)}", tokens: 0}
           end
         end,
-        timeout: 60_000
+        timeout: 120_000
       )
       |> Enum.map(fn {:ok, r} -> r end)
 
     aggregate_result = aggregate(prompt, results)
 
     if log_pid do
-      MoeRising.Logging.log(log_pid, "Aggregate", "Strategy: #{aggregate_result.strategy}", "from: #{aggregate_result.from}")
+      MoeRising.Logging.log(
+        log_pid,
+        "Aggregate",
+        "Strategy: #{aggregate_result.strategy}",
+        "from: #{aggregate_result.from}"
+      )
     end
 
     %{
