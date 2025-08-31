@@ -18,6 +18,7 @@ defmodule MoeRisingWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/moe", MoeLive
   end
 
   # Other scopes may use custom stacks.
