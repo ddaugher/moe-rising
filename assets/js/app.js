@@ -25,11 +25,25 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/moe_rising"
 import topbar from "../vendor/topbar"
 
+const AutoScroll = {
+  mounted() {
+    this.scrollToBottom()
+  },
+  
+  updated() {
+    this.scrollToBottom()
+  },
+  
+  scrollToBottom() {
+    this.el.scrollTop = this.el.scrollHeight
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {AutoScroll, ...colocatedHooks},
 })
 
 // Show progress bar on live navigation and form submits
