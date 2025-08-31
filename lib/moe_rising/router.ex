@@ -1,5 +1,6 @@
 defmodule MoeRising.Router do
   alias MoeRising.Gate
+  alias MoeRising.LLMClient
   alias MoeRising.Experts.{Writing, Code, Math, DataViz}
 
   @experts %{
@@ -44,12 +45,39 @@ defmodule MoeRising.Router do
   # Simple aggregator: pick highest gate prob; if multiple, prefer longer output
   defp aggregate(_prompt, []), do: %{strategy: :none, output: ""}
 
-  defp aggregate(_prompt, results) do
-    best =
-      results
-      |> Enum.sort_by(fn r -> {r.prob, String.length(r.output)} end, :desc)
-      |> hd()
+  # defp aggregate(_prompt, results) do
+  #   best =
+  #     results
+  #     |> Enum.sort_by(fn r -> {r.prob, String.length(r.output)} end, :desc)
+  #     |> hd()
 
-    %{strategy: :gate_rank, output: best.output, from: best.name}
+  #   %{strategy: :gate_rank, output: best.output, from: best.name}
+  # end
+
+  defp aggregate(prompt, results) do
+    case results do
+      [] ->
+        %{strategy: :none, output: ""}
+
+      [_] = [only] ->
+        %{strategy: :single, output: only.output, from: only.name}
+
+      _ ->
+        sys = "You are a helpful judge. Combine the best parts concisely."
+
+        user =
+          "Prompt: #{prompt}\n\nCandidates:\n" <>
+            Enum.map_join(results, "\n---\n", fn r ->
+              "[#{r.name} p=#{Float.round(r.prob, 2)}]\n#{r.output}"
+            end)
+
+        %{content: out, tokens: _t} = LLMClient.chat!(sys, user)
+
+        %{
+          strategy: :judge_llm,
+          output: out,
+          from: Enum.map(results, & &1.name) |> Enum.join(", ")
+        }
+    end
   end
 end
