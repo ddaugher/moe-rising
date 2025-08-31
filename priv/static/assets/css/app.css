@@ -2253,11 +2253,6 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  .md\:grid-cols-3 {
-    @media (width >= 48rem) {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
   .lg\:mx-0 {
     @media (width >= 64rem) {
       margin-inline: calc(var(--spacing) * 0);
@@ -2266,11 +2261,6 @@
   .lg\:block {
     @media (width >= 64rem) {
       display: block;
-    }
-  }
-  .lg\:grid-cols-4 {
-    @media (width >= 64rem) {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
   .lg\:px-8 {
