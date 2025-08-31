@@ -2,7 +2,7 @@ defmodule MoeRising.LLMClient do
   @moduledoc false
   @endpoint "https://api.openai.com/v1/chat/completions"
 
-  def chat!(system, user, opts \\ []) do
+  def chat!(system, user, _opts \\ []) do
     model = System.get_env("MOE_LLM_MODEL", "gpt-4o-mini")
     api_key = System.fetch_env!("OPENAI_API_KEY")
 

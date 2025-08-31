@@ -8,7 +8,7 @@ defmodule MoeRising.Gate do
     {"Writing", ~w(explain summary outline write tone prose paragraph blog doc clarify)},
     {"Code", ~w(elixir phoenix liveview mix ecto code bug compile error module function)},
     {"Math", ~w(sum add subtract multiply divide integral derivative probability matrix)},
-    {"DataViz", ~w(chart plot graph visualization data visual encoding)},
+    {"DataViz", ~w(chart plot graph visualization data visual encoding)}
   ]
 
   @weights %{"Writing" => 1.0, "Code" => 1.0, "Math" => 1.0, "DataViz" => 1.0}
