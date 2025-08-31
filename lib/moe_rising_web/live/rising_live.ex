@@ -151,29 +151,6 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
         <% end %>
 
-        <div class="border rounded-lg p-4 bg-black">
-          <h3 class="text-sm font-semibold mb-2 text-green-400">
-            Activity Log ({length(@log_messages)} messages)
-          </h3>
-          <div
-            id="activity-log"
-            class="max-h-60 overflow-y-auto space-y-0 bg-black text-green-400 font-mono text-xs p-2"
-            phx-hook="AutoScroll"
-          >
-            <%= if length(@log_messages) > 0 do %>
-              <%= for message <- Enum.reverse(@log_messages) do %>
-                <div class="text-green-400">
-                  {message}
-                </div>
-              <% end %>
-            <% else %>
-              <div class="text-gray-500">
-                No activity yet...
-              </div>
-            <% end %>
-          </div>
-        </div>
-
         <%= if @res do %>
           <div class="space-y-6">
             <div>
@@ -250,6 +227,29 @@ defmodule MoeRisingWeb.MoeLive do
 
           </div>
         <% end %>
+
+        <div class="border rounded-lg p-4 bg-black">
+          <h3 class="text-sm font-semibold mb-2 text-green-400">
+            Activity Log ({length(@log_messages)} messages)
+          </h3>
+          <div
+            id="activity-log"
+            class="max-h-60 overflow-y-auto space-y-0 bg-black text-green-400 font-mono text-xs p-2"
+            phx-hook="AutoScroll"
+          >
+            <%= if length(@log_messages) > 0 do %>
+              <%= for message <- Enum.reverse(@log_messages) do %>
+                <div class="text-green-400">
+                  {message}
+                </div>
+              <% end %>
+            <% else %>
+              <div class="text-gray-500">
+                No activity yet...
+              </div>
+            <% end %>
+          </div>
+        </div>
       </div>
     </Layouts.app>
     """
