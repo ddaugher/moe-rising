@@ -39,9 +39,6 @@ defmodule MoeRisingWeb.MoeLive do
       "Starting new query: #{String.slice(q, 0, 50)}#{if String.length(q) > 50, do: "...", else: ""}"
     )
 
-    # Start progress ticker and capture its PID
-    ticker_pid = MoeRising.ProgressTicker.start_ticker(liveview_pid, 350)
-
     # Start async task to avoid blocking the LiveView
     task = Task.async(fn -> Router.route(q, log_pid: liveview_pid) end)
 
@@ -55,17 +52,11 @@ defmodule MoeRisingWeb.MoeLive do
     {:noreply,
      socket
      |> assign(q: q, loading: true, res: nil)
-     |> assign(:task, task)
-     |> assign(:ticker_pid, ticker_pid)}
+     |> assign(:task, task)}
   end
 
   def handle_info({ref, result}, %{assigns: %{task: %Task{ref: ref}}} = socket) do
     Process.demonitor(ref, [:flush])
-
-    # Stop the progress ticker if it exists
-    if socket.assigns[:ticker_pid] do
-      MoeRising.ProgressTicker.stop_ticker(socket.assigns.ticker_pid)
-    end
 
     # Add completion message
     MoeRising.Logging.log(self(), "System", "Query completed successfully")
@@ -73,8 +64,7 @@ defmodule MoeRisingWeb.MoeLive do
     {:noreply,
      socket
      |> assign(res: result, loading: false)
-     |> assign(:task, nil)
-     |> assign(:ticker_pid, nil)}
+     |> assign(:task, nil)}
   end
 
   def handle_info({:log_message, message}, socket) do
@@ -101,29 +91,19 @@ defmodule MoeRisingWeb.MoeLive do
      |> update(:log_messages, fn messages -> [log_entry | messages] end)}
   end
 
-  def handle_info({:check_loading, ticker_pid}, socket) do
-    # Respond with current loading status
-    send(ticker_pid, {:loading_status, socket.assigns.loading})
-    {:noreply, socket}
-  end
+
 
   def handle_info(
         {:DOWN, ref, :process, _pid, reason},
         %{assigns: %{task: %Task{ref: ref}}} = socket
       ) do
-    # Stop the progress ticker if it exists
-    if socket.assigns[:ticker_pid] do
-      MoeRising.ProgressTicker.stop_ticker(socket.assigns.ticker_pid)
-    end
-
     # Add error message
     MoeRising.Logging.log(self(), "System", "Query failed: #{inspect(reason)}")
 
     {:noreply,
      socket
      |> assign(loading: false, res: %{error: "Task failed: #{inspect(reason)}"})
-     |> assign(:task, nil)
-     |> assign(:ticker_pid, nil)}
+     |> assign(:task, nil)}
   end
 
   def render(assigns) do

@@ -6,7 +6,7 @@ defmodule MoeRising.LLMClient do
 
   # --- Chat completions ---
   def chat!(system, user, _opts \\ []) do
-    model = System.get_env("MOE_LLM_MODEL", "gpt-4o-mini")
+    model = System.get_env("MOE_LLM_MODEL", "gpt-5")
     api_key = System.fetch_env!("OPENAI_API_KEY")
 
     body = %{
