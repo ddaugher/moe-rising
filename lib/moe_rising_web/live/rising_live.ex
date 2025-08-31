@@ -53,10 +53,10 @@ defmodule MoeRisingWeb.MoeLive do
     IO.puts("  rank: #{rank}, total: #{total}, percentile: #{percentile}")
 
     color = cond do
-      rank == 0 -> "bg-green-500"
-      rank == 1 -> "bg-yellow-500"
-      rank == 2 -> "bg-orange-500"
-      rank == 3 -> "bg-red-500"
+      # rank == 3 -> "bg-green-500"
+      # rank == 2 -> "bg-yellow-500"
+      rank == 1 -> "bg-orange-500"
+      rank == 0 -> "bg-red-500"
       true -> "bg-gray-500"
     end
 
