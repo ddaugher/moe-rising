@@ -247,25 +247,7 @@ defmodule MoeRisingWeb.MoeLive do
               </div>
             </div>
 
-            <%= if rag = Enum.find(@res.results, fn rr -> rr.name == "RAG" and Map.has_key?(rr, :sources) end) do %>
-              <div class="space-y-2">
-                <h2 class="text-xl font-semibold mb-3">RAG Retrieved Sources</h2>
-                <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  <%= for s <- rag.sources do %>
-                    <div class={"rounded-lg border p-3 shadow-sm #{source_bg_color(s.score, Enum.map(rag.sources, & &1.score))}"}>
-                      <div class="flex items-center justify-between text-xs text-gray-600">
-                        <span>[{s.idx}] score ≈ {:io_lib.format("~.3f", [s.score])}</span>
-                        <a href={s.url} class="underline hover:text-orange-600" target="_blank">
-                          open
-                        </a>
-                      </div>
-                      <div class="text-sm font-semibold mt-1">{s.title}</div>
-                      <div class="text-xs text-gray-700 mt-1">{s.preview}…</div>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
+
           </div>
         <% end %>
       </div>
