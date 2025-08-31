@@ -3,7 +3,7 @@ defmodule MoeRisingWeb.MoeLive do
   alias MoeRising.Router
 
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, q: "", res: nil, loading: false)}
+    {:ok, assign(socket, q: "", res: nil, loading: false, log_messages: [])}
   end
 
   defp source_bg_color(score, scores) when is_number(score) and is_list(scores) do
@@ -28,8 +28,18 @@ defmodule MoeRisingWeb.MoeLive do
   defp source_bg_color(_, _), do: "bg-gray-50 border-gray-200"
 
   def handle_event("route", %{"q" => q}, socket) do
+    # Capture the LiveView process ID
+    liveview_pid = self()
+
+    # Add a log message for the new query
+    MoeRising.Logging.log(liveview_pid, "System", "Starting new query: #{String.slice(q, 0, 50)}#{if String.length(q) > 50, do: "...", else: ""}")
+
     # Start async task to avoid blocking the LiveView
-    task = Task.async(fn -> Router.route(q) end)
+    task = Task.async(fn -> Router.route(q, log_pid: liveview_pid) end)
+
+    # Debug: print current state
+    IO.puts("LIVEVIEW: Route event triggered, current log_messages: #{length(socket.assigns.log_messages)}")
+    IO.puts("LIVEVIEW: Process ID: #{inspect(liveview_pid)}")
 
     {:noreply,
      socket
@@ -44,6 +54,29 @@ defmodule MoeRisingWeb.MoeLive do
      socket
      |> assign(res: result, loading: false)
      |> assign(:task, nil)}
+  end
+
+  def handle_info({:log_message, message}, socket) do
+    timestamp = DateTime.utc_now() |> DateTime.to_time() |> Time.to_string()
+    log_entry = "#{timestamp} - #{message}"
+
+    # Debug: print to console to verify messages are being received
+    IO.puts("LIVEVIEW: Received log message: #{log_entry}")
+    IO.puts("LIVEVIEW: Current log_messages count: #{length(socket.assigns.log_messages)}")
+    IO.puts("LIVEVIEW: Process ID: #{inspect(self())}")
+
+    {:noreply,
+     socket
+     |> update(:log_messages, fn messages -> [log_entry | messages] end)}
+  end
+
+  def handle_info({:console_message, message}, socket) do
+    timestamp = DateTime.utc_now() |> DateTime.to_time() |> Time.to_string()
+    log_entry = "#{timestamp} - [CONSOLE] #{message}"
+
+    {:noreply,
+     socket
+     |> update(:log_messages, fn messages -> [log_entry | messages] end)}
   end
 
   def handle_info({:DOWN, ref, :process, _pid, reason}, %{assigns: %{task: %Task{ref: ref}}} = socket) do
@@ -96,6 +129,23 @@ defmodule MoeRisingWeb.MoeLive do
             <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
           </div>
         <% end %>
+
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h3 class="text-sm font-semibold mb-2 text-gray-700">Activity Log (<%= length(@log_messages) %> messages)</h3>
+          <div class="max-h-60 overflow-y-auto space-y-1">
+            <%= if length(@log_messages) > 0 do %>
+              <%= for message <- Enum.reverse(@log_messages) do %>
+                <div class="text-xs text-gray-600 font-mono bg-white px-2 py-1 rounded border">
+                  <%= message %>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="text-xs text-gray-500 font-mono bg-white px-2 py-1 rounded border">
+                No activity yet...
+              </div>
+            <% end %>
+          </div>
+        </div>
 
         <%= if @res do %>
           <div class="space-y-6">

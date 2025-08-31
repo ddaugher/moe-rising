@@ -9,17 +9,31 @@ defmodule MoeRising.Experts.RAG do
   def description(), do: "Answers using augustwenty docs with citations."
 
   @impl true
-  def call(prompt, _opts) do
-    IO.inspect({:rag_start, prompt}, label: "RAG")
+  def call(prompt, opts) do
+    log_pid = Keyword.get(opts, :log_pid)
+
+    if log_pid do
+      MoeRising.Logging.log(log_pid, "RAG", "Starting RAG processing", "query length: #{String.length(prompt)}")
+    end
 
     ensure_index_loaded()
-    IO.inspect({:rag_index_loaded}, label: "RAG")
+    if log_pid do
+      MoeRising.Logging.log(log_pid, "RAG", "Index loaded successfully")
+    end
 
     qvec = LLMClient.embed!([prompt]) |> List.first()
-    IO.inspect({:rag_embedded, length(qvec)}, label: "RAG")
+    if log_pid do
+      MoeRising.Logging.log(log_pid, "RAG", "Query embedded", "vector length: #{length(qvec)}")
+    end
 
     top = Store.search(qvec, 6)
-    IO.inspect({:rag_searched, length(top)}, label: "RAG")
+    if log_pid do
+      MoeRising.Logging.log(log_pid, "RAG", "Search completed", "found #{length(top)} results")
+      Enum.with_index(top, 1)
+      |> Enum.each(fn {{score, _chunk}, idx} ->
+        MoeRising.Logging.log(log_pid, "RAG", "Result #{idx}", "score: #{Float.round(score, 4)}")
+      end)
+    end
 
     sources_for_ui =
       top
@@ -58,14 +72,21 @@ defmodule MoeRising.Experts.RAG do
   Context:
   #{context}"
 
-    IO.inspect({:rag_calling_llm}, label: "RAG")
+    if log_pid do
+      MoeRising.Logging.log(log_pid, "RAG", "Calling LLM", "context length: #{String.length(context)}")
+    end
     %{content: out, tokens: t} = LLMClient.chat!(sys, user)
-    IO.inspect({:rag_llm_done, t}, label: "RAG")
+    if log_pid do
+      MoeRising.Logging.log(log_pid, "RAG", "LLM completed", "tokens: #{t}, output length: #{String.length(out)}")
+    end
 
     {:ok, %{output: out, tokens: t, sources: sources_for_ui}}
   rescue
     e ->
-      IO.inspect({:rag_error, e}, label: "RAG")
+      log_pid = Keyword.get(opts, :log_pid)
+      if log_pid do
+        MoeRising.Logging.log(log_pid, "RAG", "Error occurred", e)
+      end
       {:error, e}
   end
 
