@@ -48,13 +48,13 @@ defmodule MoeRisingWeb.MoeLive do
             <textarea
               name="q"
               rows="4"
-              class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               placeholder="e.g., What is augustwenty's stance on professional standards?"
             ><%= @q %></textarea>
           </div>
           <button
             type="submit"
-            class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            class="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition-colors disabled:opacity-50"
             disabled={@loading}
           >
             <%= if @loading do %>
@@ -70,9 +70,9 @@ defmodule MoeRisingWeb.MoeLive do
 
         <%= if @loading do %>
           <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
             <p class="text-gray-600">Processing your query...</p>
-            <p class="text-sm text-gray-500 mt-2">This may take up to 60 seconds</p>
+            <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
           </div>
         <% end %>
 
@@ -89,7 +89,7 @@ defmodule MoeRisingWeb.MoeLive do
                     </div>
                     <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                        class="h-2 bg-indigo-500 rounded-full transition-all duration-300"
+                        class="h-2 bg-orange-500 rounded-full transition-all duration-300"
                         style={"width: #{Float.round(prob*100, 1)}%"}
                       >
                       </div>
@@ -121,7 +121,7 @@ defmodule MoeRisingWeb.MoeLive do
                                 <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
                                 <a
                                   href={s.url}
-                                  class="underline hover:text-indigo-600"
+                                  class="underline hover:text-orange-600"
                                   target="_blank"
                                 >
                                   open
@@ -157,7 +157,7 @@ defmodule MoeRisingWeb.MoeLive do
                     <div class="rounded-lg border p-3 shadow-sm bg-white">
                       <div class="flex items-center justify-between text-xs text-gray-600">
                         <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
-                        <a href={s.url} class="underline hover:text-indigo-600" target="_blank">
+                        <a href={s.url} class="underline hover:text-orange-600" target="_blank">
                           open
                         </a>
                       </div>
