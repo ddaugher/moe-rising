@@ -6,6 +6,27 @@ defmodule MoeRisingWeb.MoeLive do
     {:ok, assign(socket, q: "", res: nil, loading: false)}
   end
 
+  defp source_bg_color(score, scores) when is_number(score) and is_list(scores) do
+    sorted_scores = Enum.sort(scores, :desc)
+    rank = Enum.find_index(sorted_scores, fn s -> s == score end)
+    total = length(scores)
+
+    if rank == 0 do
+      "bg-green-50 border-green-200"
+    else
+      percentile = rank / total
+      cond do
+        percentile <= 0.2 -> "bg-green-50 border-green-200"
+        percentile <= 0.4 -> "bg-yellow-50 border-yellow-200"
+        percentile <= 0.6 -> "bg-orange-50 border-orange-200"
+        percentile <= 0.8 -> "bg-red-50 border-red-200"
+        true -> "bg-gray-50 border-gray-200"
+      end
+    end
+  end
+
+  defp source_bg_color(_, _), do: "bg-gray-50 border-gray-200"
+
   def handle_event("route", %{"q" => q}, socket) do
     # Start async task to avoid blocking the LiveView
     task = Task.async(fn -> Router.route(q) end)
@@ -116,7 +137,7 @@ defmodule MoeRisingWeb.MoeLive do
                         <div class="text-sm font-medium">Retrieved Sources</div>
                         <div class="grid gap-2">
                           <%= for s <- r.sources do %>
-                            <div class="rounded border p-2 bg-gray-50">
+                            <div class={"rounded border p-2 #{source_bg_color(s.score, Enum.map(r.sources, & &1.score))}"}>
                               <div class="flex items-center justify-between text-xs text-gray-600">
                                 <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
                                 <a
@@ -154,7 +175,7 @@ defmodule MoeRisingWeb.MoeLive do
                 <h2 class="text-xl font-semibold mb-3">RAG Retrieved Sources</h2>
                 <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-3">
                   <%= for s <- rag.sources do %>
-                    <div class="rounded-lg border p-3 shadow-sm bg-white">
+                    <div class={"rounded-lg border p-3 shadow-sm #{source_bg_color(s.score, Enum.map(rag.sources, & &1.score))}"}>
                       <div class="flex items-center justify-between text-xs text-gray-600">
                         <span>[<%= s.idx %>] score ≈ <%= :io_lib.format("~.3f", [s.score]) %></span>
                         <a href={s.url} class="underline hover:text-orange-600" target="_blank">
