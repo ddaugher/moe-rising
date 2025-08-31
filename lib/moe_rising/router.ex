@@ -1,11 +1,12 @@
 defmodule MoeRising.Router do
   alias MoeRising.Gate
-  alias MoeRising.Experts.{Writing, Code, Math}
+  alias MoeRising.Experts.{Writing, Code, Math, DataViz}
 
   @experts %{
     "Writing" => Writing,
     "Code" => Code,
-    "Math" => Math
+    "Math" => Math,
+    "DataViz" => DataViz
   }
 
   @default_top_k 2
