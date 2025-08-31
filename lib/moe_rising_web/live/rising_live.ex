@@ -12,7 +12,7 @@ defmodule MoeRisingWeb.MoeLive do
 
     {:noreply,
      socket
-     |> assign(q: q, loading: true)
+     |> assign(q: q, loading: true, res: nil)
      |> assign(:task, task)}
   end
 
