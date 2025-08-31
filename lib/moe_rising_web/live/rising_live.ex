@@ -75,7 +75,7 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
           <button
             type="submit"
-            class="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition-colors disabled:opacity-50"
+            class="btn btn-primary"
             disabled={@loading}
           >
             <%= if @loading do %>
@@ -121,7 +121,7 @@ defmodule MoeRisingWeb.MoeLive do
             </div>
 
             <div>
-              <h2 class="text-xl font-semibold mb-3">Expert Outputs Top2</h2>
+              <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
               <div class="grid md:grid-cols-2 gap-4">
                 <%= for r <- @res.results do %>
                   <div class="border rounded-lg p-4 shadow-sm bg-white">
