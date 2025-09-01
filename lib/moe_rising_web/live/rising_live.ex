@@ -29,39 +29,25 @@ defmodule MoeRisingWeb.MoeLive do
   defp source_bg_color(_, _), do: "bg-gray-50 border-gray-200"
 
   defp gate_bar_color(prob, probs) when is_number(prob) and is_list(probs) do
-    # Debug output
-    IO.puts("GATE BAR COLOR DEBUG:")
-    IO.puts("  prob: #{prob}")
-    IO.puts("  probs: #{inspect(probs)}")
+    # Create a list of {probability, original_index} pairs
+    indexed_probs = Enum.with_index(probs)
 
-    # Sort probabilities and find the rank of our specific probability
-    sorted_probs = Enum.sort(probs, :desc)
-    IO.puts("  sorted_probs: #{inspect(sorted_probs)}")
-
-    # Find all positions where this probability appears
-    positions =
-      sorted_probs
+    # Sort by probability (descending) and assign ranks
+    ranked_probs =
+      indexed_probs
+      |> Enum.sort_by(fn {p, _} -> p end, :desc)
       |> Enum.with_index()
-      |> Enum.filter(fn {p, _} -> p == prob end)
-      |> Enum.map(fn {_, index} -> index end)
+      |> Enum.map(fn {{p, original_index}, rank} -> {p, original_index, rank} end)
 
-    # Use the first (highest) rank for this probability
-    rank = List.first(positions) || 0
-    total = length(probs)
-    percentile = rank / total
+    # Find the rank for our specific probability
+    {_, _, rank} = Enum.find(ranked_probs, {prob, 0, 0}, fn {p, _, _} -> p == prob end)
 
-    IO.puts("  rank: #{rank}, total: #{total}, percentile: #{percentile}")
-
-    color = cond do
-      # rank == 3 -> "bg-green-500"
-      # rank == 2 -> "bg-yellow-500"
-      rank == 1 -> "bg-orange-500"
-      rank == 0 -> "bg-red-500"
+    # Only apply heatmap colors to top 2 experts, use gray for the rest
+    cond do
+      rank == 0 -> "bg-green-500"
+      rank == 1 -> "bg-yellow-500"
       true -> "bg-gray-500"
     end
-
-    IO.puts("  color: #{color}")
-    color
   end
 
   defp gate_bar_color(_, _), do: "bg-gray-500"
@@ -182,7 +168,7 @@ defmodule MoeRisingWeb.MoeLive do
             <div>
               <h2 class="text-xl font-semibold mb-3">Gate Probabilities</h2>
               <div class="space-y-2">
-                <%= for {name, prob} <- @res.gate.ranked do %>
+                <%= for {{name, prob}, index} <- Enum.with_index(@res.gate.ranked) do %>
                   <div class="rounded border p-3">
                     <div class="flex justify-between text-sm">
                       <span class="font-medium">{name}</span>
@@ -190,7 +176,7 @@ defmodule MoeRisingWeb.MoeLive do
                     </div>
                     <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
                       <div
-                        class={"h-2 #{gate_bar_color(prob, Enum.map(@res.gate.ranked, fn {_, p} -> p end))} rounded-full transition-all duration-300"}
+                        class={"h-2 #{if index < 2, do: if(index == 0, do: "bg-green-500", else: "bg-yellow-500"), else: "bg-gray-500"} rounded-full transition-all duration-300"}
                         style={"width: #{Float.round(prob*100, 1)}%"}
                       >
                       </div>
