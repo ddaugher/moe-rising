@@ -9,7 +9,6 @@
     monospace;
     --color-red-50: oklch(97.1% 0.013 17.38);
     --color-red-200: oklch(88.5% 0.062 18.334);
-    --color-red-500: oklch(63.7% 0.237 25.331);
     --color-orange-50: oklch(98% 0.016 73.684);
     --color-orange-200: oklch(90.1% 0.076 70.697);
     --color-orange-500: oklch(70.5% 0.213 47.604);
@@ -1781,14 +1780,8 @@
   .bg-orange-50 {
     background-color: var(--color-orange-50);
   }
-  .bg-orange-500 {
-    background-color: var(--color-orange-500);
-  }
   .bg-red-50 {
     background-color: var(--color-red-50);
-  }
-  .bg-red-500 {
-    background-color: var(--color-red-500);
   }
   .bg-white {
     background-color: var(--color-white);
