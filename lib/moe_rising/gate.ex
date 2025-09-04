@@ -19,7 +19,7 @@ defmodule MoeRising.Gate do
 
     raw =
       for {name, keywords} <- @experts, into: %{} do
-        hits = Enum.count(keywords, &String.contains?(p, &1))
+        hits = Enum.count(keywords, &contains_whole_word(p, &1))
         w = Map.fetch!(@weights, name)
         {name, w * (1.0 + hits)}
       end
@@ -36,6 +36,15 @@ defmodule MoeRising.Gate do
         |> Enum.sort_by(fn {_name, prob, index} -> {-prob, index} end)
         |> Enum.map(fn {name, prob, _index} -> {name, prob} end)
     }
+  end
+
+  def __experts__, do: @experts
+
+  def __weights__, do: @weights
+
+  defp contains_whole_word(text, keyword) do
+    # Use regex with word boundaries to match whole words only
+    String.match?(text, ~r/\b#{Regex.escape(keyword)}\b/i)
   end
 
   defp softmax(map) do

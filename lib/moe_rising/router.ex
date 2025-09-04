@@ -151,6 +151,7 @@ defmodule MoeRising.Router do
           "Aggregating results",
           "prompt: #{prompt}"
         )
+
         MoeRising.Logging.log(
           log_pid,
           "Router",

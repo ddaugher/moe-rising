@@ -80,6 +80,7 @@ defmodule MoeRising.Experts.RAG do
         "Calling LLM",
         "context length: #{String.length(context)}"
       )
+
       MoeRising.Logging.log(
         log_pid,
         "RAG",
