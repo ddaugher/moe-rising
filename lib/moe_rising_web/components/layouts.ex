@@ -43,22 +43,20 @@ defmodule MoeRisingWeb.Layouts do
           target="_blank"
         >
           <img src={~p"/images/a20-full-lockup-onlight.png"} width="120" />
-          <span class="text-sm font-semibold">v1.0.0</span>
+          <span class="text-sm font-semibold">v{Application.spec(:moe_rising, :vsn) |> to_string()}</span>
         </a>
       </div>
       <div class="flex-none">
         <ul class="flex flex-column px-1 space-x-4 items-center">
+          <li>
+            <.link navigate={~p"/readme"} class="btn btn-ghost">README</.link>
+          </li>
           <li>
             <a href="https://www.augustwenty.com/" class="btn btn-ghost" target="_blank">Website</a>
           </li>
           <li>
             <a href="https://github.com/ddaugher/moe-rising" class="btn btn-ghost" target="_blank">
               GitHub
-            </a>
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
             </a>
           </li>
         </ul>

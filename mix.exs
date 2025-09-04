@@ -21,7 +21,7 @@ defmodule MoeRising.MixProject do
   def application do
     [
       mod: {MoeRising.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :earmark]
     ]
   end
 
@@ -64,7 +64,8 @@ defmodule MoeRising.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:floki, ">= 0.30.0", only: :test},
-      {:plug_cowboy, "~> 2.7"}
+      {:plug_cowboy, "~> 2.7"},
+      {:earmark, "~> 1.4"}
     ]
   end
 

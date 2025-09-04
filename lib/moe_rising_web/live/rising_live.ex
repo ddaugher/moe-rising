@@ -238,6 +238,11 @@ defmodule MoeRisingWeb.MoeLive do
       <div class="w-full p-6 space-y-6">
         <div class="text-center">
           <h1 class="text-3xl font-bold">Mixture of Experts Demo</h1>
+          <div class="mt-2">
+            <.link navigate={~p"/readme"} class="text-sm text-blue-600 hover:text-blue-800 underline">
+              📖 View Setup Guide
+            </.link>
+          </div>
 
     <!-- Attention Process Flow -->
           <div>
@@ -262,14 +267,18 @@ defmodule MoeRisingWeb.MoeLive do
                   <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     3
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">Score<br />Calculation</div>
+                  <div class="text-xs text-gray-600 h-8 flex items-center">
+                    Score<br />Calculation
+                  </div>
                 </div>
                 <div class="text-purple-400 text-2xl flex items-center h-12">→</div>
                 <div class="text-center flex flex-col items-center">
                   <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     4
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">Softmax<br />Normalization</div>
+                  <div class="text-xs text-gray-600 h-8 flex items-center">
+                    Softmax<br />Normalization
+                  </div>
                 </div>
                 <div class="text-orange-400 text-2xl flex items-center h-12">→</div>
                 <div class="text-center flex flex-col items-center">
@@ -283,7 +292,9 @@ defmodule MoeRisingWeb.MoeLive do
                   <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     6
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">Aggregate<br />Results</div>
+                  <div class="text-xs text-gray-600 h-8 flex items-center">
+                    Aggregate<br />Results
+                  </div>
                 </div>
               </div>
               <div class="text-center text-sm text-gray-600">
@@ -307,8 +318,7 @@ defmodule MoeRisingWeb.MoeLive do
                     Route to top-k experts based on attention probabilities
                   </li>
                   <li>
-                    <strong>Aggregate Results:</strong>
-                    Combine expert results to final document
+                    <strong>Aggregate Results:</strong> Combine expert results to final document
                   </li>
                 </ol>
               </div>
