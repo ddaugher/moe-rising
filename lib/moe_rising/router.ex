@@ -145,19 +145,19 @@ defmodule MoeRising.Router do
               "[#{r.name} p=#{Float.round(r.prob, 2)}]\n#{r.output}"
             end)
 
-        MoeRising.Logging.log(
-          log_pid,
-          "Router",
-          "Aggregating results",
-          "prompt: #{prompt}"
-        )
+        # MoeRising.Logging.log(
+        #   log_pid,
+        #   "Router",
+        #   "Aggregating results",
+        #   "prompt: #{prompt}"
+        # )
 
-        MoeRising.Logging.log(
-          log_pid,
-          "Router",
-          "Aggregating results",
-          "results: #{inspect(results)}"
-        )
+        # MoeRising.Logging.log(
+        #   log_pid,
+        #   "Router",
+        #   "Aggregating results",
+        #   "results: #{inspect(results)}"
+        # )
 
         %{content: out, tokens: _t} = LLMClient.chat!(sys, user)
 

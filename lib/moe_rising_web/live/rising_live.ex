@@ -252,23 +252,23 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
 
           <!-- Activity Log - Show at top when loading -->
-          <div class="border rounded-lg p-4 bg-black">
-            <h3 class="text-sm font-semibold mb-2 text-green-400">
+          <div class="border border-gray-300 p-2 bg-white">
+            <h3 class="text-sm font-semibold mb-2 text-black">
               Activity Log ({length(@log_messages)} messages)
             </h3>
             <div
               id="activity-log"
-              class="max-h-60 overflow-y-auto space-y-0 bg-black text-green-400 font-mono text-xs p-2"
+              class="max-h-60 overflow-y-auto space-y-0 bg-white text-black font-mono text-xs p-2 border border-gray-200"
               phx-hook="AutoScroll"
             >
               <%= if length(@log_messages) > 0 do %>
                 <%= for message <- Enum.reverse(@log_messages) do %>
-                  <div class="text-green-400">
+                  <div class="text-black">
                     {message}
                   </div>
                 <% end %>
               <% else %>
-                <div class="text-gray-500">
+                <div class="text-gray-600">
                   No activity yet...
                 </div>
               <% end %>
