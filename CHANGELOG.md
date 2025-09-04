@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/ddaugher/moe-rising/compare/v1.0.0...v1.0.1) (2025-09-04)
+
+
+### Bug Fixes
+
+* changing to OSS version ([2b05273](https://github.com/ddaugher/moe-rising/commit/2b0527384b6902b940ddeac242f9da07e77e9156))
+* updating_release-please_action ([60132a5](https://github.com/ddaugher/moe-rising/commit/60132a541a93210c62f5f52d6766f51e73841c73))
+
 ## 1.0.0 (2025-09-04)
 
 
