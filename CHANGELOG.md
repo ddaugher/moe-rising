@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.2](https://github.com/ddaugher/moe-rising/compare/v1.0.1...v1.0.2) (2025-09-04)
+
+
+### Bug Fixes
+
+* Adds README documentation page ([5a19a60](https://github.com/ddaugher/moe-rising/commit/5a19a6075cfcdc3e466a6c83e18152e1dad26eb6))
+* auto_scroll_logic ([593bdef](https://github.com/ddaugher/moe-rising/commit/593bdefc38680d5d8e5ff53f54b861ed767f4cd4))
+* Enhances attention process flow visualization ([997eda0](https://github.com/ddaugher/moe-rising/commit/997eda045e92a43fcd65f10c17696a4fada830fb))
+* updates ([59da594](https://github.com/ddaugher/moe-rising/commit/59da594b4c681c5a6a37f27325cf1aba00a2fb34))
+
 ## [1.0.1](https://github.com/ddaugher/moe-rising/compare/v1.0.0...v1.0.1) (2025-09-04)
 
 
