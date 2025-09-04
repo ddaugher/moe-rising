@@ -238,89 +238,175 @@ defmodule MoeRisingWeb.MoeLive do
       <div class="w-full p-6 space-y-6">
         <div class="text-center">
           <h1 class="text-3xl font-bold">Mixture of Experts Demo</h1>
-          <div class="mt-2">
-            <.link navigate={~p"/readme"} class="text-sm text-blue-600 hover:text-blue-800 underline">
-              📖 View Setup Guide
-            </.link>
-          </div>
 
     <!-- Attention Process Flow -->
           <div>
-            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 mt-6">
-              <h3 class="text-lg font-medium text-black mb-4">Attention Process Flow</h3>
-              <div class="flex items-start justify-center space-x-4 mb-4">
-                <div class="text-center flex flex-col items-center">
+            <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6 mt-6">
+              <h3 class="text-lg font-medium text-black mb-6 text-center">Attention Process Flow</h3>
+
+              <!-- Horizontal Process Flow - All on same plane -->
+              <div class="flex items-start justify-center space-x-2 mb-6 overflow-x-auto">
+                <!-- Step 1: Input Analysis -->
+                <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     1
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">Input Prompt</div>
+                  <h4 class="font-semibold text-gray-800 mb-1 text-sm">Input Analysis</h4>
+                  <p class="text-xs text-gray-600 leading-tight">Parse and tokenize the user's prompt</p>
                 </div>
-                <div class="text-blue-400 text-2xl flex items-center h-12">→</div>
-                <div class="text-center flex flex-col items-center">
+
+                <!-- Arrow 1 -->
+                <div class="flex items-center justify-center mt-6">
+                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
+                    <line x1="4" y1="8" x2="40" y2="8"/>
+                    <line x1="34" y1="2" x2="40" y2="8"/>
+                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  </svg>
+                </div>
+
+                <!-- Step 2: Keyword Matching -->
+                <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     2
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">Keyword<br />Matching</div>
+                  <h4 class="font-semibold text-gray-800 mb-1 text-sm">Keyword Matching</h4>
+                  <p class="text-xs text-gray-600 leading-tight">Count expert-specific keywords in the prompt</p>
                 </div>
-                <div class="text-green-400 text-2xl flex items-center h-12">→</div>
-                <div class="text-center flex flex-col items-center">
+
+                <!-- Arrow 2 -->
+                <div class="flex items-center justify-center mt-6">
+                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
+                    <line x1="4" y1="8" x2="40" y2="8"/>
+                    <line x1="34" y1="2" x2="40" y2="8"/>
+                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  </svg>
+                </div>
+
+                <!-- Step 3: Score Calculation -->
+                <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     3
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">
-                    Score<br />Calculation
-                  </div>
+                  <h4 class="font-semibold text-gray-800 mb-1 text-sm">Score Calculation</h4>
+                  <p class="text-xs text-gray-600 leading-tight">Apply formula:<br/>base_weight × (1 + keyword_matches)</p>
                 </div>
-                <div class="text-purple-400 text-2xl flex items-center h-12">→</div>
-                <div class="text-center flex flex-col items-center">
+
+                <!-- Arrow 3 -->
+                <div class="flex items-center justify-center mt-6">
+                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
+                    <line x1="4" y1="8" x2="40" y2="8"/>
+                    <line x1="34" y1="2" x2="40" y2="8"/>
+                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  </svg>
+                </div>
+
+                <!-- Step 4: Softmax Normalization -->
+                <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     4
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">
-                    Softmax<br />Normalization
-                  </div>
+                  <h4 class="font-semibold text-gray-800 mb-1 text-sm">Softmax Normalization</h4>
+                  <p class="text-xs text-gray-600 leading-tight">Convert raw scores to probabilities that sum to 1.0</p>
                 </div>
-                <div class="text-orange-400 text-2xl flex items-center h-12">→</div>
-                <div class="text-center flex flex-col items-center">
+
+                <!-- Arrow 4 -->
+                <div class="flex items-center justify-center mt-6">
+                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
+                    <line x1="4" y1="8" x2="40" y2="8"/>
+                    <line x1="34" y1="2" x2="40" y2="8"/>
+                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  </svg>
+                </div>
+
+                <!-- Step 5: Expert Selection -->
+                <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     5
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">Expert<br />Selection</div>
+                  <h4 class="font-semibold text-gray-800 mb-1 text-sm">Expert Selection</h4>
+                  <p class="text-xs text-gray-600 leading-tight">Route to top-k experts based on attention probabilities</p>
                 </div>
-                <div class="text-red-400 text-2xl flex items-center h-12">→</div>
-                <div class="text-center flex flex-col items-center">
+
+                <!-- Arrow 5 -->
+                <div class="flex items-center justify-center mt-6">
+                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
+                    <line x1="4" y1="8" x2="40" y2="8"/>
+                    <line x1="34" y1="2" x2="40" y2="8"/>
+                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  </svg>
+                </div>
+
+                <!-- Step 6: Aggregate Results -->
+                <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     6
                   </div>
-                  <div class="text-xs text-gray-600 h-8 flex items-center">
-                    Aggregate<br />Results
-                  </div>
+                  <h4 class="font-semibold text-gray-800 mb-1 text-sm">Aggregate Results</h4>
+                  <p class="text-xs text-gray-600 leading-tight">Combine expert results into final document</p>
                 </div>
               </div>
-              <div class="text-center text-sm text-gray-600">
-                <p class="mb-2">The attention mechanism follows this 6-step process:</p>
-                <ol class="list-decimal list-inside space-y-1 text-center max-w-2xl mx-auto">
-                  <li><strong>Input Analysis:</strong> Parse and tokenize the user's prompt</li>
-                  <li>
-                    <strong>Keyword Matching:</strong>
-                    Count how many expert-specific keywords appear in the prompt
-                  </li>
-                  <li>
-                    <strong>Score Calculation:</strong>
-                    Apply formula: base_weight × (1 + keyword_matches)
-                  </li>
-                  <li>
-                    <strong>Softmax Normalization:</strong>
-                    Convert raw scores to probabilities that sum to 1.0
-                  </li>
-                  <li>
-                    <strong>Expert Selection:</strong>
-                    Route to top-k experts based on attention probabilities
-                  </li>
-                  <li>
-                    <strong>Aggregate Results:</strong> Combine expert results to final document
-                  </li>
-                </ol>
+
+              <!-- Mobile view: Stack vertically with arrows -->
+              <div class="lg:hidden space-y-4">
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-gray-800">Input Analysis</h4>
+                    <p class="text-xs text-gray-600">Parse and tokenize the user's prompt</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-gray-800">Keyword Matching</h4>
+                    <p class="text-xs text-gray-600">Count expert-specific keywords in the prompt</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    3
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-gray-800">Score Calculation</h4>
+                    <p class="text-xs text-gray-600">Apply formula: base_weight × (1 + keyword_matches)</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    4
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-gray-800">Softmax Normalization</h4>
+                    <p class="text-xs text-gray-600">Convert raw scores to probabilities that sum to 1.0</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    5
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-gray-800">Expert Selection</h4>
+                    <p class="text-xs text-gray-600">Route to top-k experts based on attention probabilities</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    6
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-gray-800">Aggregate Results</h4>
+                    <p class="text-xs text-gray-600">Combine expert results into final document</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -355,29 +441,9 @@ defmodule MoeRisingWeb.MoeLive do
           </button>
         </.form>
 
-        <%= if @loading do %>
-          <!-- Processing Section - Show at top when loading -->
-          <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4">
-            </div>
-            <p class="text-gray-600">Processing your query...</p>
-            <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
-          </div>
-        <% end %>
 
         <%= if @attention_analysis != nil do %>
           <div class="space-y-6">
-            <!-- 1. Attention Phase Analysis -->
-            <%= if phase_comes_before?(:input_analysis, @processing_phase) do %>
-              <div>
-                <h2 class="text-xl font-semibold mb-4 text-center text-black">
-                  Attention Phase Analysis
-                </h2>
-                <p class="text-gray-600 text-center mb-6">
-                  See how the gate analyzes your prompt and calculates attention scores for each expert
-                </p>
-              </div>
-            <% end %>
 
     <!-- 2. Input Prompt Analysis -->
             <%= if phase_comes_before?(:gate_analysis_complete, @processing_phase) do %>
@@ -673,6 +739,17 @@ defmodule MoeRisingWeb.MoeLive do
             </div>
             <p class="text-gray-700 font-medium">Processing Complete!</p>
             <p class="text-sm text-gray-500 mt-1">Your query has been processed successfully</p>
+          </div>
+        <% end %>
+
+        <%= if @loading do %>
+          <!-- Processing Section - Show just above activity log when loading -->
+          <div id="processing-section" class="text-center py-6 bg-gray-50 border rounded-lg">
+            <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            </div>
+            <p class="text-gray-700 font-medium">Processing your query...</p>
+            <p class="text-sm text-gray-500 mt-1">This may take a few moments</p>
           </div>
         <% end %>
 
