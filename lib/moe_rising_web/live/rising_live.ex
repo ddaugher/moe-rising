@@ -280,7 +280,7 @@ defmodule MoeRisingWeb.MoeLive do
           <div class="space-y-6">
             <!-- 1. Attention Phase Analysis -->
             <%= if phase_comes_before?(:input_analysis, @processing_phase) do %>
-              <div>
+            <div>
                 <h2 class="text-xl font-semibold mb-4 text-center">🧠 Attention Phase Analysis</h2>
                 <p class="text-gray-600 text-center mb-6">
                   See how the gate analyzes your prompt and calculates attention scores for each expert
@@ -330,7 +330,7 @@ defmodule MoeRisingWeb.MoeLive do
                 </div>
                 <div class="text-center text-sm text-gray-600">
                   <p class="mb-2">The attention mechanism follows this 5-step process:</p>
-                  <ol class="list-decimal list-inside space-y-1 text-left max-w-2xl mx-auto">
+                  <ol class="list-decimal list-inside space-y-1 text-center max-w-2xl mx-auto">
                     <li><strong>Input Analysis:</strong> Parse and tokenize the user's prompt</li>
                     <li>
                       <strong>Keyword Matching:</strong>
@@ -379,9 +379,16 @@ defmodule MoeRisingWeb.MoeLive do
               </div>
             <% end %>
 
-            <!-- 3. Expert Attention Visualization -->
+            <!-- 3. Score Calculation -->
             <%= if phase_comes_before?(:routing_experts, @processing_phase) do %>
-              <div class="grid gap-6">
+              <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+                <h3 class="text-lg font-medium text-orange-900 mb-4">🧮 Score Calculation</h3>
+                <p class="text-sm text-orange-700 mb-4">
+                  Each expert's attention score is calculated using the formula: <strong>base_weight × (1 + keyword_matches)</strong>
+                </p>
+
+                <!-- Expert Attention Visualization -->
+                <div class="grid gap-6">
                 <%= for {expert_name, analysis} <- get_ordered_expert_analysis(@attention_analysis) do %>
                   <div class="border rounded-lg p-4 bg-white shadow-sm attention-expert-card">
                     <div class="flex items-center justify-between mb-3">
@@ -453,13 +460,41 @@ defmodule MoeRisingWeb.MoeLive do
                     </div>
                   </div>
                 <% end %>
+                </div>
               </div>
             <% end %>
 
-
-            <!-- 4. Attention Flow Summary -->
+            <!-- 4. Gate Probabilities -->
             <%= if phase_comes_before?(:expert_processing, @processing_phase) do %>
-              <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 attention-flow-summary">
+              <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+                <h3 class="text-lg font-medium text-emerald-900 mb-3">🎯 Gate Probabilities</h3>
+                <p class="text-sm text-emerald-700 mb-4">
+                  Final attention probabilities after softmax normalization. The top 2 experts will be selected for processing.
+                </p>
+
+              <div class="space-y-2">
+                  <%= for {{name, prob}, index} <- Enum.with_index(@attention_analysis.gate_result.ranked) do %>
+                    <div class="rounded border p-3 bg-white">
+                    <div class="flex justify-between text-sm">
+                      <span class="font-medium">{name}</span>
+                        <span>{Float.round(prob, 2) |> Float.to_string()}</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
+                      <div
+                        class={"h-2 #{if index < 2, do: if(index == 0, do: "bg-green-500", else: "bg-yellow-500"), else: "bg-gray-500"} rounded-full transition-all duration-300"}
+                        style={"width: #{Float.round(prob*100, 1)}%"}
+                      >
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+            <% end %>
+
+            <!-- 5. Attention Flow Summary -->
+            <%= if phase_comes_before?(:expert_processing, @processing_phase) do %>
+              <div class="bg-white border border-gray-200 rounded-lg p-4 attention-flow-summary">
                 <h3 class="text-lg font-medium text-purple-900 mb-3">🎯 Attention Flow Summary</h3>
                 <div class="space-y-4">
                   <!-- Top Experts with Details -->
@@ -534,34 +569,11 @@ defmodule MoeRisingWeb.MoeLive do
 
         <%= if @res do %>
           <div class="space-y-6">
-            <!-- 5. Gate Probabilities -->
-            <%= if @res && @processing_phase == :complete do %>
-              <div>
-                <h2 class="text-xl font-semibold mb-3">Gate Probabilities</h2>
-              <div class="space-y-2">
-                <%= for {{name, prob}, index} <- Enum.with_index(@res.gate.ranked) do %>
-                  <div class="rounded border p-3">
-                    <div class="flex justify-between text-sm">
-                      <span class="font-medium">{name}</span>
-                      <span>{Float.round(prob, 2) |> Float.to_string()}</span>
-                    </div>
-                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
-                      <div
-                        class={"h-2 #{if index < 2, do: if(index == 0, do: "bg-green-500", else: "bg-yellow-500"), else: "bg-gray-500"} rounded-full transition-all duration-300"}
-                        style={"width: #{Float.round(prob*100, 1)}%"}
-                      >
-                      </div>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-              </div>
-            <% end %>
 
-            <!-- 6. Expert Outputs Top-2 -->
+            <!-- 5. Expert Outputs Top-2 -->
             <%= if @res && @processing_phase == :complete do %>
-              <div>
-                <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
+            <div>
+              <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
               <div class="grid md:grid-cols-2 gap-4">
                 <%= for r <- @res.results do %>
                   <div class="border rounded-lg p-4 shadow-sm bg-white">
@@ -598,30 +610,30 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                 <% end %>
               </div>
-              </div>
+            </div>
             <% end %>
 
-            <!-- 7. Final Answer -->
+            <!-- 6. Final Answer -->
             <%= if @res && @processing_phase == :complete do %>
-              <div>
-                <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
+            <div>
+              <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
               <div class="border rounded-lg p-4 bg-white">
                 <div class="text-sm text-gray-500 mb-2">
                   strategy: {@res.aggregate.strategy} (from: {@res.aggregate.from})
                 </div>
                 <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= @res.aggregate.output %></pre>
               </div>
-              </div>
+            </div>
             <% end %>
           </div>
         <% end %>
 
-        <!-- 8. Processing Complete -->
-        <%= if @processing_phase == :complete do %>
+        <!-- 7. Processing Complete -->
+        <%= if @processing_phase == :complete and @res != nil do %>
           <div class="text-center py-6 bg-gray-50 border rounded-lg">
             <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">
               ✓
-            </div>
+                </div>
             <p class="text-gray-700 font-medium">Processing Complete!</p>
             <p class="text-sm text-gray-500 mt-1">Your query has been processed successfully</p>
           </div>
