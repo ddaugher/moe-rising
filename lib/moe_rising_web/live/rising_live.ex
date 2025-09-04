@@ -240,7 +240,7 @@ defmodule MoeRisingWeb.MoeLive do
           <h1 class="text-3xl font-bold">Mixture of Experts Demo</h1>
 
     <!-- Attention Process Flow -->
-          <%= if @attention_analysis != nil and phase_comes_before?(:input_analysis, @processing_phase) do %>
+          <div>
             <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 mt-6">
               <h3 class="text-lg font-medium text-black mb-4">Attention Process Flow</h3>
               <div class="flex items-start justify-center space-x-4 mb-4">
@@ -278,9 +278,16 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                   <div class="text-xs text-gray-600 h-8 flex items-center">Expert<br />Selection</div>
                 </div>
+                <div class="text-red-400 text-2xl flex items-center h-12">→</div>
+                <div class="text-center flex flex-col items-center">
+                  <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
+                    6
+                  </div>
+                  <div class="text-xs text-gray-600 h-8 flex items-center">Aggregate<br />Results</div>
+                </div>
               </div>
               <div class="text-center text-sm text-gray-600">
-                <p class="mb-2">The attention mechanism follows this 5-step process:</p>
+                <p class="mb-2">The attention mechanism follows this 6-step process:</p>
                 <ol class="list-decimal list-inside space-y-1 text-center max-w-2xl mx-auto">
                   <li><strong>Input Analysis:</strong> Parse and tokenize the user's prompt</li>
                   <li>
@@ -299,10 +306,14 @@ defmodule MoeRisingWeb.MoeLive do
                     <strong>Expert Selection:</strong>
                     Route to top-k experts based on attention probabilities
                   </li>
+                  <li>
+                    <strong>Aggregate Results:</strong>
+                    Combine expert results to final document
+                  </li>
                 </ol>
               </div>
             </div>
-          <% end %>
+          </div>
 
           <p class="text-gray-600">
             Type a prompt; the gate will score experts and route to the topK.
