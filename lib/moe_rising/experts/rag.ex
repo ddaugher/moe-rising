@@ -80,12 +80,6 @@ defmodule MoeRising.Experts.RAG do
         "Calling LLM",
         "context length: #{String.length(context)}"
       )
-      MoeRising.Logging.log(
-        log_pid,
-        "RAG",
-        "Calling LLM",
-        "context: #{context}"
-      )
     end
 
     %{content: out, tokens: t} = LLMClient.chat!(sys, user)

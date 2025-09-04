@@ -99,6 +99,63 @@
 /* Use the data attribute for dark mode  */
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+/* Attention Phase Animations */
+@keyframes attention-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes attention-slide-in {
+  from { 
+    transform: translateX(-20px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateX(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes attention-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes attention-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
+}
+
+.attention-expert-card {
+  animation: attention-slide-in 0.6s ease-out;
+}
+
+.attention-expert-card:nth-child(1) { animation-delay: 0.1s; }
+.attention-expert-card:nth-child(2) { animation-delay: 0.2s; }
+.attention-expert-card:nth-child(3) { animation-delay: 0.3s; }
+.attention-expert-card:nth-child(4) { animation-delay: 0.4s; }
+.attention-expert-card:nth-child(5) { animation-delay: 0.5s; }
+
+.attention-probability {
+  animation: attention-fade-in 0.8s ease-out;
+}
+
+.attention-bar {
+  animation: attention-fade-in 1s ease-out;
+}
+
+.attention-keyword-match {
+  animation: attention-pulse 2s ease-in-out infinite;
+}
+
+.attention-flow-summary {
+  animation: attention-fade-in 1.2s ease-out;
+}
+
+.attention-highlight {
+  animation: attention-glow 2s ease-in-out infinite;
+}
+
 /* Remove input focus highlighting */
 textarea:focus,
 input:focus {
