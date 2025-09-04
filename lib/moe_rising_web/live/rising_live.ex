@@ -5,7 +5,8 @@ defmodule MoeRisingWeb.MoeLive do
 
   def mount(_params, _session, socket) do
     {:ok,
-     assign(socket, q: "", res: nil, loading: false, log_messages: [], attention_analysis: nil)}
+     assign(socket, q: "", res: nil, loading: false, log_messages: [], attention_analysis: nil,
+            processing_phase: :idle)}
   end
 
   defp source_bg_color(score, scores) when is_number(score) and is_list(scores) do
@@ -59,6 +60,26 @@ defmodule MoeRisingWeb.MoeLive do
     String.match?(text, ~r/\b#{Regex.escape(keyword)}\b/i)
   end
 
+  defp get_phase_status(phase, current_phase) do
+    cond do
+      phase == current_phase -> "bg-green-500 animate-pulse"
+      phase_comes_before?(phase, current_phase) -> "bg-green-500"
+      true -> "bg-gray-300"
+    end
+  end
+
+  defp phase_comes_before?(phase, current_phase) do
+    phase_order = [:gate_analysis_complete, :routing_experts, :expert_processing, :aggregating_results, :complete]
+    phase_index = Enum.find_index(phase_order, &(&1 == phase))
+    current_index = Enum.find_index(phase_order, &(&1 == current_phase))
+
+    if phase_index && current_index do
+      phase_index < current_index
+    else
+      false
+    end
+  end
+
   defp analyze_attention(prompt) do
     gate_result = Gate.score(prompt)
     experts = get_expert_keywords()
@@ -103,9 +124,13 @@ defmodule MoeRisingWeb.MoeLive do
     # Start async task to avoid blocking the LiveView
     task = Task.async(fn -> Router.route(q, log_pid: liveview_pid) end)
 
+    # Start a timer to simulate phase progression (slower, more realistic)
+    Process.send_after(self(), :update_processing_phase, 4000)
+
     {:noreply,
      socket
-     |> assign(q: q, loading: true, res: nil, attention_analysis: attention_analysis)
+     |> assign(q: q, loading: true, res: nil, attention_analysis: attention_analysis,
+                processing_phase: :gate_analysis_complete)
      |> assign(:task, task)}
   end
 
@@ -117,7 +142,7 @@ defmodule MoeRisingWeb.MoeLive do
 
     {:noreply,
      socket
-     |> assign(res: result, loading: false)
+     |> assign(res: result, loading: false, processing_phase: :complete)
      |> assign(:task, nil)}
   end
 
@@ -151,6 +176,38 @@ defmodule MoeRisingWeb.MoeLive do
      socket
      |> assign(loading: false, res: %{error: "Task failed: #{inspect(reason)}"})
      |> assign(:task, nil)}
+  end
+
+  def handle_info(:update_processing_phase, %{assigns: %{processing_phase: current_phase, loading: true}} = socket) do
+    next_phase = get_next_phase(current_phase)
+
+    # Only advance if we're not in the final phase
+    if next_phase != :complete do
+      # More conservative timing - wait longer between phases
+      # This better reflects actual processing time
+      delay = case current_phase do
+        :gate_analysis_complete -> 6000  # 6 seconds for routing
+        :routing_experts -> 8000         # 8 seconds for expert processing
+        :expert_processing -> 5000       # 5 seconds for aggregation
+        _ -> 3000
+      end
+
+      Process.send_after(self(), :update_processing_phase, delay)
+    end
+
+    {:noreply, assign(socket, processing_phase: next_phase)}
+  end
+
+  def handle_info(:update_processing_phase, socket), do: {:noreply, socket}
+
+  defp get_next_phase(current_phase) do
+    case current_phase do
+      :gate_analysis_complete -> :routing_experts
+      :routing_experts -> :expert_processing
+      :expert_processing -> :aggregating_results
+      :aggregating_results -> :complete
+      _ -> :complete
+    end
   end
 
   def render(assigns) do
@@ -465,20 +522,28 @@ defmodule MoeRisingWeb.MoeLive do
               <div class="text-sm font-medium text-gray-700 mb-3">Attention Phase Steps:</div>
               <div class="space-y-2">
                 <div class="flex items-center space-x-3">
-                  <div class="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-                  <span class="text-sm text-gray-600">Gate analysis complete</span>
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:gate_analysis_complete, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :gate_analysis_complete, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Gate analysis complete
+                  </span>
                 </div>
                 <div class="flex items-center space-x-3">
-                  <div class="w-4 h-4 bg-yellow-500 rounded-full animate-pulse"></div>
-                  <span class="text-sm text-gray-600">Routing to top experts</span>
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:routing_experts, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :routing_experts, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Routing to top experts
+                  </span>
                 </div>
                 <div class="flex items-center space-x-3">
-                  <div class="w-4 h-4 bg-gray-300 rounded-full"></div>
-                  <span class="text-sm text-gray-400">Expert processing</span>
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:expert_processing, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :expert_processing, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Expert processing
+                  </span>
                 </div>
                 <div class="flex items-center space-x-3">
-                  <div class="w-4 h-4 bg-gray-300 rounded-full"></div>
-                  <span class="text-sm text-gray-400">Aggregating results</span>
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:aggregating_results, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :expert_processing, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Aggregating results
+                  </span>
                 </div>
               </div>
             </div>
