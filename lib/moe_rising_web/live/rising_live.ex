@@ -130,7 +130,7 @@ defmodule MoeRisingWeb.MoeLive do
     {:noreply,
      socket
      |> assign(q: q, loading: true, res: nil, attention_analysis: attention_analysis,
-                processing_phase: :gate_analysis_complete)
+                processing_phase: :input_analysis)
      |> assign(:task, task)}
   end
 
@@ -186,6 +186,7 @@ defmodule MoeRisingWeb.MoeLive do
       # More conservative timing - wait longer between phases
       # This better reflects actual processing time
       delay = case current_phase do
+        :input_analysis -> 3000          # 3 seconds for input analysis
         :gate_analysis_complete -> 6000  # 6 seconds for routing
         :routing_experts -> 8000         # 8 seconds for expert processing
         :expert_processing -> 5000       # 5 seconds for aggregation
@@ -202,6 +203,7 @@ defmodule MoeRisingWeb.MoeLive do
 
   defp get_next_phase(current_phase) do
     case current_phase do
+      :input_analysis -> :gate_analysis_complete
       :gate_analysis_complete -> :routing_experts
       :routing_experts -> :expert_processing
       :expert_processing -> :aggregating_results
@@ -246,7 +248,78 @@ defmodule MoeRisingWeb.MoeLive do
           </button>
         </.form>
 
-        <%= if @attention_analysis do %>
+        <%= if @loading do %>
+          <!-- Processing Section - Show at top when loading -->
+          <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4">
+            </div>
+            <p class="text-gray-600">Processing your query...</p>
+            <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
+
+    <!-- Attention Processing Steps -->
+            <div class="mt-6 max-w-md mx-auto">
+              <div class="text-sm font-medium text-gray-700 mb-3 text-center">Attention Phase Steps:</div>
+              <div class="space-y-2 max-w-sm mx-auto">
+                <div class="flex items-center space-x-3">
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:input_analysis, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :input_analysis, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Input Prompt Analysis
+                  </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:gate_analysis_complete, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :gate_analysis_complete, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Gate analysis complete
+                  </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:routing_experts, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :routing_experts, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Routing to top experts
+                  </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:expert_processing, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :expert_processing, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Expert processing
+                  </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <div class={["w-4 h-4 rounded-full", get_phase_status(:aggregating_results, @processing_phase)]}></div>
+                  <span class={["text-sm", if(@processing_phase == :aggregating_results, do: "text-green-600 font-medium", else: "text-gray-600")]}>
+                    Aggregating results
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity Log - Show at top when loading -->
+          <div class="border rounded-lg p-4 bg-black">
+            <h3 class="text-sm font-semibold mb-2 text-green-400">
+              Activity Log ({length(@log_messages)} messages)
+            </h3>
+            <div
+              id="activity-log"
+              class="max-h-60 overflow-y-auto space-y-0 bg-black text-green-400 font-mono text-xs p-2"
+              phx-hook="AutoScroll"
+            >
+              <%= if length(@log_messages) > 0 do %>
+                <%= for message <- Enum.reverse(@log_messages) do %>
+                  <div class="text-green-400">
+                    {message}
+                  </div>
+                <% end %>
+              <% else %>
+                <div class="text-gray-500">
+                  No activity yet...
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <%= if @attention_analysis != nil and not @loading do %>
           <div class="space-y-6">
             <div>
               <h2 class="text-xl font-semibold mb-4 text-center">🧠 Attention Phase Analysis</h2>
@@ -510,45 +583,11 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
         <% end %>
 
-        <%= if @loading do %>
-          <div class="text-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4">
-            </div>
-            <p class="text-gray-600">Processing your query...</p>
-            <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
 
-    <!-- Attention Processing Steps -->
-            <div class="mt-6 max-w-md mx-auto">
-              <div class="text-sm font-medium text-gray-700 mb-3">Attention Phase Steps:</div>
-              <div class="space-y-2">
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:gate_analysis_complete, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :gate_analysis_complete, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Gate analysis complete
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:routing_experts, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :routing_experts, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Routing to top experts
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:expert_processing, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :expert_processing, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Expert processing
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:aggregating_results, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :expert_processing, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Aggregating results
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        <% end %>
+
+
+
+
 
         <%= if @res do %>
           <div class="space-y-6">
@@ -625,28 +664,18 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
         <% end %>
 
-        <div class="border rounded-lg p-4 bg-black">
-          <h3 class="text-sm font-semibold mb-2 text-green-400">
-            Activity Log ({length(@log_messages)} messages)
-          </h3>
-          <div
-            id="activity-log"
-            class="max-h-60 overflow-y-auto space-y-0 bg-black text-green-400 font-mono text-xs p-2"
-            phx-hook="AutoScroll"
-          >
-            <%= if length(@log_messages) > 0 do %>
-              <%= for message <- Enum.reverse(@log_messages) do %>
-                <div class="text-green-400">
-                  {message}
-                </div>
-              <% end %>
-            <% else %>
-              <div class="text-gray-500">
-                No activity yet...
-              </div>
-            <% end %>
+        <%= if not @loading and @attention_analysis != nil do %>
+          <!-- Processing Section - Show at bottom when complete -->
+          <div class="text-center py-6 bg-gray-50 border rounded-lg">
+            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">
+              ✓
+            </div>
+            <p class="text-gray-700 font-medium">Processing Complete!</p>
+            <p class="text-sm text-gray-500 mt-1">Your query has been processed successfully</p>
           </div>
-        </div>
+        <% end %>
+
+
       </div>
     </Layouts.app>
     """
