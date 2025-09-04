@@ -251,29 +251,6 @@ defmodule MoeRisingWeb.MoeLive do
 
           </div>
 
-          <!-- Activity Log - Show at top when loading -->
-          <div class="border border-gray-300 p-2 bg-white">
-            <h3 class="text-sm font-semibold mb-2 text-black">
-              Activity Log ({length(@log_messages)} messages)
-            </h3>
-            <div
-              id="activity-log"
-              class="max-h-60 overflow-y-auto space-y-0 bg-white text-black font-mono text-xs p-2 border border-gray-200"
-              phx-hook="AutoScroll"
-            >
-              <%= if length(@log_messages) > 0 do %>
-                <%= for message <- Enum.reverse(@log_messages) do %>
-                  <div class="text-black">
-                    {message}
-                  </div>
-                <% end %>
-              <% else %>
-                <div class="text-gray-600">
-                  No activity yet...
-                </div>
-              <% end %>
-            </div>
-          </div>
         <% end %>
 
         <%= if @attention_analysis != nil do %>
@@ -281,7 +258,7 @@ defmodule MoeRisingWeb.MoeLive do
             <!-- 1. Attention Phase Analysis -->
             <%= if phase_comes_before?(:input_analysis, @processing_phase) do %>
             <div>
-                <h2 class="text-xl font-semibold mb-4 text-center">🧠 Attention Phase Analysis</h2>
+                <h2 class="text-xl font-semibold mb-4 text-center text-black">Attention Phase Analysis</h2>
                 <p class="text-gray-600 text-center mb-6">
                   See how the gate analyzes your prompt and calculates attention scores for each expert
                 </p>
@@ -291,7 +268,7 @@ defmodule MoeRisingWeb.MoeLive do
             <!-- 1. Attention Process Flow -->
             <%= if phase_comes_before?(:input_analysis, @processing_phase) do %>
               <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-medium text-green-900 mb-4">🔄 Attention Process Flow</h3>
+                <h3 class="text-lg font-medium text-black mb-4">Attention Process Flow</h3>
                 <div class="flex items-center justify-center space-x-4 mb-4">
                   <div class="text-center">
                     <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
@@ -356,7 +333,7 @@ defmodule MoeRisingWeb.MoeLive do
             <!-- 2. Input Prompt Analysis -->
             <%= if phase_comes_before?(:gate_analysis_complete, @processing_phase) do %>
               <div class="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-medium text-blue-900 mb-3">📝 Input Prompt Analysis</h3>
+                <h3 class="text-lg font-medium text-black mb-3">Input Prompt Analysis</h3>
                 <div class="bg-white border rounded p-3">
                   <div class="text-sm text-gray-600 mb-2">Keywords detected and highlighted:</div>
                   <div class="text-gray-800 leading-relaxed">
@@ -382,7 +359,7 @@ defmodule MoeRisingWeb.MoeLive do
             <!-- 3. Score Calculation -->
             <%= if phase_comes_before?(:routing_experts, @processing_phase) do %>
               <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-medium text-orange-900 mb-4">🧮 Score Calculation</h3>
+                <h3 class="text-lg font-medium text-black mb-4">Score Calculation</h3>
                 <p class="text-sm text-orange-700 mb-4">
                   Each expert's attention score is calculated using the formula: <strong>base_weight × (1 + keyword_matches)</strong>
                 </p>
@@ -467,7 +444,7 @@ defmodule MoeRisingWeb.MoeLive do
             <!-- 4. Gate Probabilities -->
             <%= if phase_comes_before?(:expert_processing, @processing_phase) do %>
               <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-medium text-emerald-900 mb-3">🎯 Gate Probabilities</h3>
+                <h3 class="text-lg font-medium text-black mb-3">Gate Probabilities</h3>
                 <p class="text-sm text-emerald-700 mb-4">
                   Final attention probabilities after softmax normalization. The top 2 experts will be selected for processing.
                 </p>
@@ -495,7 +472,7 @@ defmodule MoeRisingWeb.MoeLive do
             <!-- 5. Attention Flow Summary -->
             <%= if phase_comes_before?(:expert_processing, @processing_phase) do %>
               <div class="bg-white border border-gray-200 rounded-lg p-4 attention-flow-summary">
-                <h3 class="text-lg font-medium text-purple-900 mb-3">🎯 Attention Flow Summary</h3>
+                <h3 class="text-lg font-medium text-black mb-3">Attention Flow Summary</h3>
                 <div class="space-y-4">
                   <!-- Top Experts with Details -->
                   <div>
@@ -511,7 +488,7 @@ defmodule MoeRisingWeb.MoeLive do
                               ]}>
                                 {index + 1}
                               </div>
-                              <span class="font-medium text-purple-900">{name}</span>
+                              <span class="font-medium text-black">{name}</span>
                             </div>
                             <div class="text-right">
                               <div class="text-lg font-bold text-purple-600">
@@ -639,6 +616,29 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
         <% end %>
 
+        <!-- Activity Log - Always visible -->
+        <div class="border border-gray-300 p-2 bg-white">
+          <h3 class="text-sm font-semibold mb-2 text-black">
+            Activity Log ({length(@log_messages)} messages)
+          </h3>
+          <div
+            id="activity-log"
+            class="max-h-60 overflow-y-auto space-y-0 bg-white text-black font-mono text-xs p-2 border border-gray-200"
+            phx-hook="AutoScroll"
+          >
+            <%= if length(@log_messages) > 0 do %>
+              <%= for message <- Enum.reverse(@log_messages) do %>
+                <div class="text-black">
+                  {message}
+                </div>
+              <% end %>
+            <% else %>
+              <div class="text-gray-600">
+                No activity yet...
+              </div>
+            <% end %>
+          </div>
+        </div>
 
       </div>
     </Layouts.app>
