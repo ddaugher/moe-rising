@@ -39,11 +39,35 @@ const AutoScroll = {
   }
 }
 
+const AutoScrollToProcessing = {
+  mounted() {
+    // Use setTimeout to ensure the element is fully rendered
+    setTimeout(() => {
+      this.scrollToElement()
+    }, 100)
+  },
+  
+  updated() {
+    // Use setTimeout to ensure the element is fully rendered
+    setTimeout(() => {
+      this.scrollToElement()
+    }, 100)
+  },
+  
+  scrollToElement() {
+    // Smooth scroll to the processing section
+    this.el.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center' 
+    })
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {AutoScroll, ...colocatedHooks},
+  hooks: {AutoScroll, AutoScrollToProcessing, ...colocatedHooks},
 })
 
 // Show progress bar on live navigation and form submits
@@ -53,6 +77,63 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
+
+// Auto-scroll to processing section when it appears
+window.addEventListener("phx:updated", () => {
+  const processingSection = document.getElementById("processing-section")
+  console.log("phx:updated event fired, processing section found:", !!processingSection)
+  if (processingSection) {
+    console.log("Scrolling to processing section")
+    setTimeout(() => {
+      processingSection.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }, 200)
+  }
+})
+
+// Also try with a more specific event
+window.addEventListener("phx:live_view:updated", () => {
+  const processingSection = document.getElementById("processing-section")
+  console.log("phx:live_view:updated event fired, processing section found:", !!processingSection)
+  if (processingSection) {
+    console.log("Scrolling to processing section (live_view:updated)")
+    setTimeout(() => {
+      processingSection.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      })
+    }, 200)
+  }
+})
+
+// Use MutationObserver to watch for when processing section appears
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.type === 'childList') {
+      const processingSection = document.getElementById("processing-section")
+      if (processingSection) {
+        console.log("Processing section detected via MutationObserver")
+        setTimeout(() => {
+          processingSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          })
+        }, 300)
+      }
+    }
+  })
+})
+
+// Start observing when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  const targetNode = document.body
+  observer.observe(targetNode, { 
+    childList: true, 
+    subtree: true 
+  })
+})
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
