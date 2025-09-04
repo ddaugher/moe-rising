@@ -60,16 +60,9 @@ defmodule MoeRisingWeb.MoeLive do
     String.match?(text, ~r/\b#{Regex.escape(keyword)}\b/i)
   end
 
-  defp get_phase_status(phase, current_phase) do
-    cond do
-      phase == current_phase -> "bg-green-500 animate-pulse"
-      phase_comes_before?(phase, current_phase) -> "bg-green-500"
-      true -> "bg-gray-300"
-    end
-  end
 
   defp phase_comes_before?(phase, current_phase) do
-    phase_order = [:gate_analysis_complete, :routing_experts, :expert_processing, :aggregating_results, :complete]
+    phase_order = [:input_analysis, :gate_analysis_complete, :routing_experts, :expert_processing, :aggregating_results, :complete]
     phase_index = Enum.find_index(phase_order, &(&1 == phase))
     current_index = Enum.find_index(phase_order, &(&1 == current_phase))
 
@@ -256,42 +249,6 @@ defmodule MoeRisingWeb.MoeLive do
             <p class="text-gray-600">Processing your query...</p>
             <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
 
-    <!-- Attention Processing Steps -->
-            <div class="mt-6 max-w-md mx-auto">
-              <div class="text-sm font-medium text-gray-700 mb-3 text-center">Attention Phase Steps:</div>
-              <div class="space-y-2 max-w-sm mx-auto">
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:input_analysis, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :input_analysis, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Input Prompt Analysis
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:gate_analysis_complete, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :gate_analysis_complete, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Gate analysis complete
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:routing_experts, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :routing_experts, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Routing to top experts
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:expert_processing, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :expert_processing, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Expert processing
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <div class={["w-4 h-4 rounded-full", get_phase_status(:aggregating_results, @processing_phase)]}></div>
-                  <span class={["text-sm", if(@processing_phase == :aggregating_results, do: "text-green-600 font-medium", else: "text-gray-600")]}>
-                    Aggregating results
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Activity Log - Show at top when loading -->
@@ -319,40 +276,21 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
         <% end %>
 
-        <%= if @attention_analysis != nil and not @loading do %>
+        <%= if @attention_analysis != nil do %>
           <div class="space-y-6">
-            <div>
-              <h2 class="text-xl font-semibold mb-4 text-center">🧠 Attention Phase Analysis</h2>
-              <p class="text-gray-600 text-center mb-6">
-                See how the gate analyzes your prompt and calculates attention scores for each expert
-              </p>
-
-    <!-- Prompt Analysis -->
-              <div class="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-medium text-blue-900 mb-3">📝 Input Prompt Analysis</h3>
-                <div class="bg-white border rounded p-3">
-                  <div class="text-sm text-gray-600 mb-2">Keywords detected and highlighted:</div>
-                  <div class="text-gray-800 leading-relaxed">
-                    <%= if @attention_analysis do %>
-                      <%= Phoenix.HTML.raw(
-                        highlight_keywords(
-                          @attention_analysis.prompt,
-                          @attention_analysis.analysis
-                          |> Map.values()
-                          |> Enum.flat_map(& &1.matched_keywords)
-                          |> Enum.uniq()
-                          |> Enum.sort_by(&String.length/1, :desc)
-                        )
-                      ) %>
-                    <% else %>
-                      <span class="text-gray-400 italic">Submit a prompt to see keyword analysis...</span>
-                    <% end %>
-                  </div>
-                </div>
+            <!-- 1. Attention Phase Analysis -->
+            <%= if phase_comes_before?(:input_analysis, @processing_phase) do %>
+              <div>
+                <h2 class="text-xl font-semibold mb-4 text-center">🧠 Attention Phase Analysis</h2>
+                <p class="text-gray-600 text-center mb-6">
+                  See how the gate analyzes your prompt and calculates attention scores for each expert
+                </p>
               </div>
+            <% end %>
 
-    <!-- Attention Process Flow -->
-              <div class="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6">
+            <!-- 1. Attention Process Flow -->
+            <%= if phase_comes_before?(:input_analysis, @processing_phase) do %>
+              <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
                 <h3 class="text-lg font-medium text-green-900 mb-4">🔄 Attention Process Flow</h3>
                 <div class="flex items-center justify-center space-x-4 mb-4">
                   <div class="text-center">
@@ -413,8 +351,36 @@ defmodule MoeRisingWeb.MoeLive do
                   </ol>
                 </div>
               </div>
+            <% end %>
 
-    <!-- Expert Attention Visualization -->
+            <!-- 2. Input Prompt Analysis -->
+            <%= if phase_comes_before?(:gate_analysis_complete, @processing_phase) do %>
+              <div class="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h3 class="text-lg font-medium text-blue-900 mb-3">📝 Input Prompt Analysis</h3>
+                <div class="bg-white border rounded p-3">
+                  <div class="text-sm text-gray-600 mb-2">Keywords detected and highlighted:</div>
+                  <div class="text-gray-800 leading-relaxed">
+                    <%= if @attention_analysis do %>
+                      <%= Phoenix.HTML.raw(
+                        highlight_keywords(
+                          @attention_analysis.prompt,
+                          @attention_analysis.analysis
+                          |> Map.values()
+                          |> Enum.flat_map(& &1.matched_keywords)
+                          |> Enum.uniq()
+                          |> Enum.sort_by(&String.length/1, :desc)
+                        )
+                      ) %>
+                    <% else %>
+                      <span class="text-gray-400 italic">Submit a prompt to see keyword analysis...</span>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+
+            <!-- 3. Expert Attention Visualization -->
+            <%= if phase_comes_before?(:routing_experts, @processing_phase) do %>
               <div class="grid gap-6">
                 <%= for {expert_name, analysis} <- get_ordered_expert_analysis(@attention_analysis) do %>
                   <div class="border rounded-lg p-4 bg-white shadow-sm attention-expert-card">
@@ -488,8 +454,11 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                 <% end %>
               </div>
+            <% end %>
 
-                  <!-- Attention Flow Summary -->
+
+            <!-- 4. Attention Flow Summary -->
+            <%= if phase_comes_before?(:expert_processing, @processing_phase) do %>
               <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 attention-flow-summary">
                 <h3 class="text-lg font-medium text-purple-900 mb-3">🎯 Attention Flow Summary</h3>
                 <div class="space-y-4">
@@ -552,34 +521,8 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                 </div>
               </div>
-            </div>
+            <% end %>
 
-    <!-- Attention Heatmap -->
-            <div class="bg-gradient-to-r from-indigo-50 to-cyan-50 border border-indigo-200 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-indigo-900 mb-4">🔥 Attention Heatmap</h3>
-              <div class="grid grid-cols-5 gap-2">
-                <%= for {expert_name, analysis} <- get_ordered_expert_analysis(@attention_analysis) do %>
-                  <div class="text-center">
-                    <div class={[
-                      "w-16 h-16 rounded-lg flex items-center justify-center text-white font-bold text-sm mb-2 transition-all duration-300",
-                      cond do
-                        analysis.probability > 0.3 -> "bg-red-500 shadow-lg"
-                        analysis.probability > 0.2 -> "bg-orange-500 shadow-md"
-                        analysis.probability > 0.1 -> "bg-yellow-500 shadow-sm"
-                        true -> "bg-gray-400"
-                      end
-                    ]}>
-                      {Float.round(analysis.probability * 100, 0) |> trunc() |> Integer.to_string()}%
-                    </div>
-                    <div class="text-xs font-medium text-gray-700">{expert_name}</div>
-                    <div class="text-xs text-gray-500">{analysis.hits} matches</div>
-                  </div>
-                <% end %>
-              </div>
-              <div class="mt-3 text-center text-xs text-gray-600">
-                <span class="inline-block w-3 h-3 bg-red-500 rounded mr-1"></span>High Attention <span class="inline-block w-3 h-3 bg-orange-500 rounded mx-2"></span>Medium <span class="inline-block w-3 h-3 bg-yellow-500 rounded mx-2"></span>Low <span class="inline-block w-3 h-3 bg-gray-400 rounded ml-1"></span>Minimal
-              </div>
-            </div>
           </div>
         <% end %>
 
@@ -591,8 +534,10 @@ defmodule MoeRisingWeb.MoeLive do
 
         <%= if @res do %>
           <div class="space-y-6">
-            <div>
-              <h2 class="text-xl font-semibold mb-3">Gate Probabilities</h2>
+            <!-- 5. Gate Probabilities -->
+            <%= if @res && @processing_phase == :complete do %>
+              <div>
+                <h2 class="text-xl font-semibold mb-3">Gate Probabilities</h2>
               <div class="space-y-2">
                 <%= for {{name, prob}, index} <- Enum.with_index(@res.gate.ranked) do %>
                   <div class="rounded border p-3">
@@ -610,10 +555,13 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                 <% end %>
               </div>
-            </div>
+              </div>
+            <% end %>
 
-            <div>
-              <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
+            <!-- 6. Expert Outputs Top-2 -->
+            <%= if @res && @processing_phase == :complete do %>
+              <div>
+                <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
               <div class="grid md:grid-cols-2 gap-4">
                 <%= for r <- @res.results do %>
                   <div class="border rounded-lg p-4 shadow-sm bg-white">
@@ -650,22 +598,26 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                 <% end %>
               </div>
-            </div>
+              </div>
+            <% end %>
 
-            <div>
-              <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
+            <!-- 7. Final Answer -->
+            <%= if @res && @processing_phase == :complete do %>
+              <div>
+                <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
               <div class="border rounded-lg p-4 bg-white">
                 <div class="text-sm text-gray-500 mb-2">
                   strategy: {@res.aggregate.strategy} (from: {@res.aggregate.from})
                 </div>
                 <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= @res.aggregate.output %></pre>
               </div>
-            </div>
+              </div>
+            <% end %>
           </div>
         <% end %>
 
-        <%= if not @loading and @attention_analysis != nil do %>
-          <!-- Processing Section - Show at bottom when complete -->
+        <!-- 8. Processing Complete -->
+        <%= if @processing_phase == :complete do %>
           <div class="text-center py-6 bg-gray-50 border rounded-lg">
             <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">
               ✓
