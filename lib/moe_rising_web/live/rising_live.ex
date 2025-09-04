@@ -477,7 +477,7 @@ defmodule MoeRisingWeb.MoeLive do
             <%= if phase_comes_before?(:routing_experts, @processing_phase) do %>
               <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
                 <h3 class="text-lg font-medium text-black mb-4">Score Calculation</h3>
-                <p class="text-sm text-orange-700 mb-4">
+                <p class="text-sm text-black mb-4">
                   Each expert's attention score is calculated using the formula:
                   <strong>base_weight × (1 + keyword_matches)</strong>
                 </p>
@@ -542,20 +542,6 @@ defmodule MoeRisingWeb.MoeLive do
                           </div>
                         </div>
 
-    <!-- Probability Bar -->
-                        <div class="space-y-1">
-                          <div class="flex justify-between text-sm text-gray-600">
-                            <span>Attention Score</span>
-                            <span>{Float.round(analysis.probability, 3) |> Float.to_string()}</span>
-                          </div>
-                          <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                            <div
-                              class="h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out attention-bar"
-                              style={"width: #{Float.round(analysis.probability * 100, 1)}%"}
-                            >
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   <% end %>

@@ -13,7 +13,7 @@ defmodule MoeRising.Gate do
   ]
 
   # @weights %{"Writing" => 1.0, "Code" => 1.0, "Math" => 1.0, "DataViz" => 1.0, "RAG" => 1.0}
-  @weights %{"Writing" => 1.0, "Code" => 1.0, "Math" => 1.0}
+   @weights %{"Writing" => 1.0, "Code" => 1.0, "Math" => 1.0}
 
   def score(prompt) do
     p = String.downcase(prompt)
