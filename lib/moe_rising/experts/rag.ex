@@ -60,26 +60,18 @@ defmodule MoeRising.Experts.RAG do
     context =
       top
       |> Enum.with_index(1)
-      |> Enum.map(fn {{_score, c}, i} -> "[#{i}] #{c.title} — #{c.url}
-
-
-  #{String.trim(c.text)}" end)
-      |> Enum.join("
-
-
-  ---
-
-
-  ")
+      |> Enum.map(fn {{_score, c}, i} -> "[#{i}] #{c.title} — #{c.url} #{String.trim(c.text)}" end)
+      |> Enum.join(" --- ")
 
     sys =
       "You answer strictly from the provided context. Cite inline like [1], [2], and include a Sources list."
 
-    user = "Question: #{prompt}
+    user = """
+    Question: #{prompt}
 
-
-  Context:
-  #{context}"
+    Context:
+    #{context}
+    """
 
     if log_pid do
       MoeRising.Logging.log(
@@ -87,6 +79,12 @@ defmodule MoeRising.Experts.RAG do
         "RAG",
         "Calling LLM",
         "context length: #{String.length(context)}"
+      )
+      MoeRising.Logging.log(
+        log_pid,
+        "RAG",
+        "Calling LLM",
+        "context: #{context}"
       )
     end
 

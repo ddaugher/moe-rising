@@ -26,11 +26,11 @@ defmodule MoeRising.Router do
     if log_pid do
       MoeRising.Logging.log(
         log_pid,
-        "Gate",
+        "Router",
         "Selected experts: #{Enum.map(chosen, fn {name, _, _} -> name end) |> Enum.join(", ")}"
       )
 
-      MoeRising.Logging.log(log_pid, "Gate", "Gate probabilities", gate.ranked)
+      MoeRising.Logging.log(log_pid, "Router", "Gate probabilities", gate.ranked)
     end
 
     results =
@@ -40,8 +40,8 @@ defmodule MoeRising.Router do
           if log_pid do
             MoeRising.Logging.log(
               log_pid,
-              "Expert",
-              "Starting #{name} (probability: #{Float.round(prob, 3)})"
+              "Router",
+              "Starting expert: #{name} (probability: #{Float.round(prob, 3)})"
             )
           end
 
@@ -51,15 +51,15 @@ defmodule MoeRising.Router do
                 if log_pid do
                   MoeRising.Logging.log(
                     log_pid,
-                    "Expert",
-                    "Completed #{name}",
+                    "Router",
+                    "Completed expert #{name}",
                     "tokens: #{t}, output length: #{String.length(out)}"
                   )
 
                   if Map.has_key?(result, :sources) do
                     MoeRising.Logging.log(
                       log_pid,
-                      "Expert",
+                      "Router",
                       "#{name} sources",
                       "found #{length(result.sources)} sources"
                     )
@@ -76,7 +76,7 @@ defmodule MoeRising.Router do
 
               {:error, reason} ->
                 if log_pid do
-                  MoeRising.Logging.log(log_pid, "Expert", "Error in #{name}", reason)
+                  MoeRising.Logging.log(log_pid, "Router", "Error in #{name}", reason)
                 end
 
                 %{name: name, prob: prob, output: "Error: #{inspect(reason)}", tokens: 0}
@@ -84,7 +84,7 @@ defmodule MoeRising.Router do
           rescue
             e ->
               if log_pid do
-                MoeRising.Logging.log(log_pid, "Expert", "Exception in #{name}", e)
+                MoeRising.Logging.log(log_pid, "Router", "Exception in #{name}", e)
               end
 
               %{name: name, prob: prob, output: "Exception: #{inspect(e)}", tokens: 0}
@@ -94,12 +94,12 @@ defmodule MoeRising.Router do
       )
       |> Enum.map(fn {:ok, r} -> r end)
 
-    aggregate_result = aggregate(prompt, results)
+    aggregate_result = aggregate(prompt, results, log_pid)
 
     if log_pid do
       MoeRising.Logging.log(
         log_pid,
-        "Aggregate",
+        "Router",
         "Strategy: #{aggregate_result.strategy}",
         "from: #{aggregate_result.from}"
       )
@@ -114,9 +114,9 @@ defmodule MoeRising.Router do
   end
 
   # Simple aggregator: pick highest gate prob; if multiple, prefer longer output
-  defp aggregate(_prompt, []), do: %{strategy: :none, output: ""}
+  defp aggregate(_prompt, [], _log_pid), do: %{strategy: :none, output: ""}
 
-  # defp aggregate(_prompt, results) do
+  # defp aggregate(_prompt, results, _log_pid) do
   #   best =
   #     results
   #     |> Enum.sort_by(fn r -> {r.prob, String.length(r.output)} end, :desc)
@@ -125,15 +125,18 @@ defmodule MoeRising.Router do
   #   %{strategy: :gate_rank, output: best.output, from: best.name}
   # end
 
-  defp aggregate(prompt, results) do
+  defp aggregate(prompt, results, log_pid) do
     case results do
       [] ->
+        MoeRising.Logging.log(log_pid, "Router", "No results")
         %{strategy: :none, output: ""}
 
       [_] = [only] ->
+        MoeRising.Logging.log(log_pid, "Router", "Single result")
         %{strategy: :single, output: only.output, from: only.name}
 
       _ ->
+        MoeRising.Logging.log(log_pid, "Router", "Multiple results")
         sys = "You are a helpful judge. Combine the best parts concisely."
 
         user =
@@ -142,7 +145,22 @@ defmodule MoeRising.Router do
               "[#{r.name} p=#{Float.round(r.prob, 2)}]\n#{r.output}"
             end)
 
+        MoeRising.Logging.log(
+          log_pid,
+          "Router",
+          "Aggregating results",
+          "prompt: #{prompt}"
+        )
+        MoeRising.Logging.log(
+          log_pid,
+          "Router",
+          "Aggregating results",
+          "results: #{inspect(results)}"
+        )
+
         %{content: out, tokens: _t} = LLMClient.chat!(sys, user)
+
+        MoeRising.Logging.log(log_pid, "Router", "Strategy: judge_llm", "output: #{out}")
 
         %{
           strategy: :judge_llm,

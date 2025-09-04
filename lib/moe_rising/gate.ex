@@ -29,12 +29,12 @@ defmodule MoeRising.Gate do
     %{
       scores: raw,
       probs: probs,
-          ranked:
-      @experts
-      |> Enum.with_index()
-      |> Enum.map(fn {{name, _keywords}, index} -> {name, Map.fetch!(probs, name), index} end)
-      |> Enum.sort_by(fn {_name, prob, index} -> {-prob, index} end)
-      |> Enum.map(fn {name, prob, _index} -> {name, prob} end)
+      ranked:
+        @experts
+        |> Enum.with_index()
+        |> Enum.map(fn {{name, _keywords}, index} -> {name, Map.fetch!(probs, name), index} end)
+        |> Enum.sort_by(fn {_name, prob, index} -> {-prob, index} end)
+        |> Enum.map(fn {name, prob, _index} -> {name, prob} end)
     }
   end
 

@@ -28,30 +28,6 @@ defmodule MoeRisingWeb.MoeLive do
 
   defp source_bg_color(_, _), do: "bg-gray-50 border-gray-200"
 
-  defp gate_bar_color(prob, probs) when is_number(prob) and is_list(probs) do
-    # Create a list of {probability, original_index} pairs
-    indexed_probs = Enum.with_index(probs)
-
-    # Sort by probability (descending) and assign ranks
-    ranked_probs =
-      indexed_probs
-      |> Enum.sort_by(fn {p, _} -> p end, :desc)
-      |> Enum.with_index()
-      |> Enum.map(fn {{p, original_index}, rank} -> {p, original_index, rank} end)
-
-    # Find the rank for our specific probability
-    {_, _, rank} = Enum.find(ranked_probs, {prob, 0, 0}, fn {p, _, _} -> p == prob end)
-
-    # Only apply heatmap colors to top 2 experts, use gray for the rest
-    cond do
-      rank == 0 -> "bg-green-500"
-      rank == 1 -> "bg-yellow-500"
-      true -> "bg-gray-500"
-    end
-  end
-
-  defp gate_bar_color(_, _), do: "bg-gray-500"
-
   def handle_event("route", %{"q" => q}, socket) do
     # Capture the LiveView process ID
     liveview_pid = self()
@@ -102,8 +78,6 @@ defmodule MoeRisingWeb.MoeLive do
      socket
      |> update(:log_messages, fn messages -> [log_entry | messages] end)}
   end
-
-
 
   def handle_info(
         {:DOWN, ref, :process, _pid, reason},
@@ -235,8 +209,6 @@ defmodule MoeRisingWeb.MoeLive do
                 <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= @res.aggregate.output %></pre>
               </div>
             </div>
-
-
           </div>
         <% end %>
 
