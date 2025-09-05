@@ -66,7 +66,7 @@ defmodule MoeRising.Router do
                   end
                 end
 
-                %{
+                expert_result = %{
                   name: name,
                   prob: prob,
                   output: out,
@@ -74,12 +74,27 @@ defmodule MoeRising.Router do
                   sources: Map.get(result, :sources)
                 }
 
+                # Send individual expert result to LiveView
+                if log_pid do
+                  IO.puts("DEBUG: Sending expert result for #{name} to #{inspect(log_pid)}")
+                  send(log_pid, {:expert_result, expert_result})
+                end
+
+                expert_result
+
               {:error, reason} ->
                 if log_pid do
                   MoeRising.Logging.log(log_pid, "Router", "Error in #{name}", reason)
                 end
 
-                %{name: name, prob: prob, output: "Error: #{inspect(reason)}", tokens: 0}
+                expert_result = %{name: name, prob: prob, output: "Error: #{inspect(reason)}", tokens: 0}
+
+                # Send error result to LiveView
+                if log_pid do
+                  send(log_pid, {:expert_result, expert_result})
+                end
+
+                expert_result
             end
           rescue
             e ->
@@ -87,7 +102,14 @@ defmodule MoeRising.Router do
                 MoeRising.Logging.log(log_pid, "Router", "Exception in #{name}", e)
               end
 
-              %{name: name, prob: prob, output: "Exception: #{inspect(e)}", tokens: 0}
+              expert_result = %{name: name, prob: prob, output: "Exception: #{inspect(e)}", tokens: 0}
+
+              # Send error result to LiveView
+              if log_pid do
+                send(log_pid, {:expert_result, expert_result})
+              end
+
+              expert_result
           end
         end,
         timeout: 120_000
