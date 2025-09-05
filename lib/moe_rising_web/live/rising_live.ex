@@ -11,7 +11,8 @@ defmodule MoeRisingWeb.MoeLive do
        loading: false,
        log_messages: [],
        attention_analysis: nil,
-       processing_phase: :idle
+       processing_phase: :idle,
+       expert_results: []
      )}
   end
 
@@ -203,7 +204,8 @@ defmodule MoeRisingWeb.MoeLive do
        loading: true,
        res: nil,
        attention_analysis: attention_analysis,
-       processing_phase: :input_analysis
+       processing_phase: :input_analysis,
+       expert_results: []
      )
      |> assign(:task, task)}
   end
