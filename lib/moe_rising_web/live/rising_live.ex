@@ -839,15 +839,13 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
         <% end %>
 
-        <%= if @res do %>
+        <!-- 5. Expert Outputs Top-2 -->
+        <%= if @expert_results && length(@expert_results) > 0 do %>
           <div class="space-y-6">
-
-    <!-- 5. Expert Outputs Top-2 -->
-            <%= if @res && @processing_phase == :complete do %>
               <div>
                 <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
                 <div class="grid md:grid-cols-2 gap-4">
-                  <%= for r <- @res.results do %>
+                  <%= for r <- @expert_results do %>
                     <div class="border rounded-lg p-4 shadow-sm bg-white">
                       <div class="text-sm text-gray-500 mb-2">
                         Expert: <span class="font-medium">{r.name}</span> ·
@@ -885,10 +883,13 @@ defmodule MoeRisingWeb.MoeLive do
                   <% end %>
                 </div>
               </div>
-            <% end %>
+          </div>
+        <% end %>
 
+        <%= if @res do %>
+          <div class="space-y-6">
     <!-- 6. Final Answer -->
-            <%= if @res && @processing_phase == :complete do %>
+            <%= if @res && @res.aggregate && @processing_phase == :complete do %>
               <div>
                 <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
                 <div class="border rounded-lg p-4 bg-white">
