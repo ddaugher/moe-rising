@@ -634,6 +634,42 @@ defmodule MoeRisingWeb.MoeLive do
                         >
                         </div>
                       </div>
+
+                      <!-- RAG Expert Details -->
+                      <%= if name == "RAG" and Map.get(@attention_analysis.analysis, "RAG")[:rag_details] do %>
+                        <% rag_details = Map.get(@attention_analysis.analysis, "RAG")[:rag_details] %>
+                        <%= if Map.has_key?(rag_details, :error) do %>
+                          <div class="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                            RAG Error: {rag_details.error}
+                          </div>
+                        <% else %>
+                          <div class="mt-3 space-y-2">
+                            <div class="text-xs text-gray-600 bg-blue-50 p-2 rounded border">
+                              <div class="font-medium mb-1">RAG Search Details:</div>
+                              <div>Query embedded: {if rag_details.query_embedded, do: "✓", else: "✗"} | Vector length: {rag_details.vector_length} | Results found: {rag_details.results_found} | Context length: {rag_details.context_length}</div>
+                            </div>
+
+                            <%= if rag_details.search_results && length(rag_details.search_results) > 0 do %>
+                              <div class="text-xs">
+                                <div class="font-medium text-gray-700 mb-1">Top Search Results:</div>
+                                <div class="space-y-1">
+                                  <%= for result <- Enum.take(rag_details.search_results, 3) do %>
+                                    <div class="bg-gray-50 p-2 rounded border text-xs">
+                                      <div class="flex justify-between items-start mb-1">
+                                        <span class="font-medium">Result {result.idx}</span>
+                                        <span class="text-gray-500">score: {result.score}</span>
+                                      </div>
+                                      <div class="text-gray-600 truncate" title={result.title}>
+                                        {result.title}
+                                      </div>
+                                    </div>
+                                  <% end %>
+                                </div>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      <% end %>
                     </div>
                   <% end %>
                 </div>
