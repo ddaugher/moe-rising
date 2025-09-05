@@ -142,7 +142,7 @@ defmodule MoeRising.Router do
         user =
           "Prompt: #{prompt}\n\nCandidates:\n" <>
             Enum.map_join(results, "\n---\n", fn r ->
-              "[#{r.name} p=#{Float.round(r.prob, 2)}]\n#{r.output}"
+              "[#{r.name} p=#{Float.round(r.prob, 4)}]\n#{r.output}"
             end)
 
         # MoeRising.Logging.log(

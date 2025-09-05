@@ -563,7 +563,7 @@ defmodule MoeRisingWeb.MoeLive do
                     <div class="rounded border p-3 bg-white">
                       <div class="flex justify-between text-sm">
                         <span class="font-medium">{name}</span>
-                        <span>{Float.round(prob, 2) |> Float.to_string()}</span>
+                        <span>{Float.round(prob, 4) |> Float.to_string()}</span>
                       </div>
                       <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-2">
                         <div
@@ -667,7 +667,7 @@ defmodule MoeRisingWeb.MoeLive do
                     <div class="border rounded-lg p-4 shadow-sm bg-white">
                       <div class="text-sm text-gray-500 mb-2">
                         Expert: <span class="font-medium">{r.name}</span> ·
-                        p≈{Float.round(r.prob, 2) |> Float.to_string()} ·
+                        p≈{Float.round(r.prob, 4) |> Float.to_string()} ·
                         tokens: {r.tokens}
                       </div>
                       <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= r.output %></pre>
