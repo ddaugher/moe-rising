@@ -784,16 +784,43 @@ defmodule MoeRisingWeb.MoeLive do
     <!-- Routing Decision -->
                   <div class="bg-white rounded-lg p-3 border border-purple-200">
                     <div class="text-sm font-medium text-purple-700 mb-2">🚀 Routing Decision:</div>
-                    <div class="text-sm text-gray-700 space-y-2">
-                      <p>
-                        The gate uses <strong>whole word matching</strong>
-                        to analyze your prompt against expert-specific keywords.
-                        Experts are scored based on how many of their keywords appear as complete words in your query.
-                      </p>
-                      <p>
-                        Your query will be routed to the top 2 experts with the highest attention scores.
-                        Higher attention means the expert is more likely to have relevant knowledge for your specific query.
-                      </p>
+                    <div class="text-sm text-gray-700 space-y-3">
+                      <div>
+                        <p class="mb-2">
+                          The gate uses <strong>whole word matching</strong>
+                          to analyze your prompt against expert-specific keywords.
+                          Experts are scored based on how many of their keywords appear as complete words in your query.
+                        </p>
+                        <p>
+                          Your query will be routed to the top 2 experts with the highest attention scores.
+                          Higher attention means the expert is more likely to have relevant knowledge for your specific query.
+                        </p>
+                      </div>
+
+                      <!-- Processing Details -->
+                      <div class="bg-gray-50 p-3 rounded border">
+                        <div class="text-xs font-medium text-gray-700 mb-2">📊 Processing Details:</div>
+                        <div class="space-y-1 text-xs text-gray-600">
+                          <div>• <span class="font-medium">Query length:</span> {String.length(@attention_analysis.prompt)} characters</div>
+                          <div>• <span class="font-medium">Total experts evaluated:</span> {length(@attention_analysis.gate_result.ranked)}</div>
+                          <div>• <span class="font-medium">Experts selected:</span> {length(Enum.take(@attention_analysis.gate_result.ranked, 2))}</div>
+                          <div>• <span class="font-medium">Softmax normalization:</span> Applied to raw scores</div>
+                          <%= if Map.get(@attention_analysis.analysis, "RAG")[:rag_details] do %>
+                            <% rag_details = Map.get(@attention_analysis.analysis, "RAG")[:rag_details] %>
+                            <%= if !Map.has_key?(rag_details, :error) do %>
+                              <div>• <span class="font-medium">RAG index status:</span> Loaded ({rag_details.results_found} documents available)</div>
+                            <% end %>
+                          <% end %>
+                        </div>
+                      </div>
+
+                      <!-- Next Steps -->
+                      <div class="bg-blue-50 p-3 rounded border">
+                        <div class="text-xs font-medium text-blue-700 mb-1">⏭️ Next Steps:</div>
+                        <div class="text-xs text-blue-600">
+                          The selected experts will process your query in parallel, then an LLM judge will aggregate their responses into a final answer.
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
