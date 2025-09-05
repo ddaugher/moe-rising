@@ -86,6 +86,58 @@ defmodule MoeRisingWeb.MoeLive do
     end
   end
 
+  defp get_rag_search_details(prompt) do
+    try do
+      # Ensure RAG store is loaded
+      alias MoeRising.RAG.Store
+      if !Store.loaded?() do
+        case Store.load_from_disk!() do
+          {:error, _} ->
+            %{error: "RAG index not loaded"}
+          _ -> :ok
+        end
+      end
+
+      # Get query embedding
+      alias MoeRising.LLMClient
+      qvec = LLMClient.embed!([prompt]) |> List.first()
+
+      # Perform search
+      top_results = Store.search(qvec, 6)
+
+      # Format results for display
+      search_results =
+        top_results
+        |> Enum.with_index(1)
+        |> Enum.map(fn {{score, chunk}, idx} ->
+          %{
+            idx: idx,
+            score: Float.round(score, 4),
+            title: chunk.title,
+            url: chunk.url,
+            preview: String.slice(String.trim(chunk.text), 0, 200)
+          }
+        end)
+
+      # Calculate context length
+      context_length =
+        top_results
+        |> Enum.map(fn {_score, chunk} -> String.length(chunk.text) end)
+        |> Enum.sum()
+
+      %{
+        query_embedded: true,
+        vector_length: length(qvec),
+        results_found: length(top_results),
+        search_results: search_results,
+        context_length: context_length
+      }
+    rescue
+      e ->
+        %{error: "Failed to get RAG details: #{Exception.message(e)}"}
+    end
+  end
+
   defp analyze_attention(prompt) do
     gate_result = Gate.score(prompt)
     experts = get_expert_keywords()
