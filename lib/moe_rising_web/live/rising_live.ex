@@ -232,6 +232,14 @@ defmodule MoeRisingWeb.MoeLive do
      |> push_event("scroll-log", %{})}
   end
 
+  def handle_info({:expert_result, expert_result}, socket) do
+    # Add the expert result to our list and update the UI
+    IO.puts("DEBUG: Received expert result for #{expert_result.name}, current count: #{length(socket.assigns.expert_results)}")
+    updated_results = [expert_result | socket.assigns.expert_results]
+    IO.puts("DEBUG: Updated results count: #{length(updated_results)}")
+    {:noreply, assign(socket, expert_results: updated_results)}
+  end
+
   def handle_info({:console_message, message}, socket) do
     timestamp = DateTime.utc_now() |> DateTime.to_time() |> Time.to_string()
     log_entry = "#{timestamp} - [CONSOLE] #{message}"
