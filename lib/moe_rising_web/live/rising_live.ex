@@ -148,15 +148,25 @@ defmodule MoeRisingWeb.MoeLive do
         score = Map.fetch!(gate_result.scores, name)
         prob = Map.fetch!(gate_result.probs, name)
 
-        {name,
-         %{
-           keywords: keywords,
-           hits: hits,
-           raw_score: score,
-           probability: prob,
-           matched_keywords:
-             Enum.filter(keywords, &contains_whole_word(String.downcase(prompt), &1))
-         }}
+        expert_data = %{
+          keywords: keywords,
+          hits: hits,
+          raw_score: score,
+          probability: prob,
+          matched_keywords:
+            Enum.filter(keywords, &contains_whole_word(String.downcase(prompt), &1))
+        }
+
+        # Add RAG-specific details if RAG expert is likely to be selected (top 2)
+        expert_data =
+          if name == "RAG" and prob > 0.1 do
+            rag_details = get_rag_search_details(prompt)
+            Map.put(expert_data, :rag_details, rag_details)
+          else
+            expert_data
+          end
+
+        {name, expert_data}
       end
 
     %{
