@@ -7,12 +7,14 @@ A Phoenix LiveView application that demonstrates a Mixture of Experts (MoE) syst
 - **Attention-based Expert Routing**: Uses keyword matching and softmax normalization to route queries to the most relevant experts
 - **Real-time Processing Visualization**: Shows the 6-step attention process flow with live updates
 - **Multiple Expert Types**: 
-  - **RAG**: Retrieval-Augmented Generation using augustwenty documentation
+  - **RAG**: Retrieval-Augmented Generation using augustwenty documentation with semantic search and citations
   - **Writing**: Content creation and explanation
   - **Code**: Programming and technical assistance
   - **Math**: Mathematical reasoning and calculations
   - **DataViz**: Data visualization and charting
 - **Interactive UI**: Phoenix LiveView interface with real-time updates and activity logging
+- **Real-time Logging System**: Comprehensive logging that captures expert processing steps and sends updates to the UI
+- **Advanced Aggregation**: Uses an LLM judge to intelligently combine results from multiple experts
 
 ## Prerequisites
 
@@ -189,11 +191,21 @@ mix assets.setup
 mix assets.build
 ```
 
-4. **Set up environment variables**
+4. **Build the RAG index**
+
+The RAG expert requires a pre-built index of the augustwenty documentation:
+
+```bash
+mix moe.rag.build
+```
+
+This will process all markdown files in `priv/a20_docs/` and create a searchable index at `priv/a20_index.json`.
+
+5. **Set up environment variables**
 
 Create your `.env` file with the required environment variables (see Environment Variables section above).
 
-5. **Verify setup**
+6. **Verify setup**
 
 ```bash
 # Run tests to ensure everything is working
@@ -263,14 +275,21 @@ moe-rising/
 ├── lib/
 │   ├── moe_rising/           # Core application logic
 │   │   ├── gate.ex          # Attention mechanism and expert scoring
-│   │   ├── router.ex        # Expert routing logic
+│   │   ├── router.ex        # Expert routing logic with LLM aggregation
 │   │   ├── llm_client.ex    # OpenAI API client
-│   │   └── experts/         # Expert implementations
-│   │       ├── rag.ex       # RAG expert
-│   │       ├── writing.ex   # Writing expert
-│   │       ├── code.ex      # Code expert
-│   │       ├── math.ex      # Math expert
-│   │       └── dataviz.ex   # Data visualization expert
+│   │   ├── logging.ex       # Real-time logging system
+│   │   ├── experts/         # Expert implementations
+│   │   │   ├── rag.ex       # RAG expert with semantic search
+│   │   │   ├── writing.ex   # Writing expert
+│   │   │   ├── code.ex      # Code expert
+│   │   │   ├── math.ex      # Math expert
+│   │   │   └── dataviz.ex   # Data visualization expert
+│   │   └── rag/             # RAG system components
+│   │       ├── store.ex     # In-memory ETS store for chunks
+│   │       ├── indexer.ex   # Document indexing and chunking
+│   │       └── chunker.ex   # Text chunking utilities
+│   ├── mix/tasks/           # Custom Mix tasks
+│   │   └── moe_rag_build.ex # RAG index building task
 │   └── moe_rising_web/      # Web layer
 │       ├── live/            # LiveView components
 │       └── components/      # Reusable components
@@ -279,7 +298,8 @@ moe-rising/
 │   └── js/                 # JavaScript
 ├── config/                 # Configuration files
 ├── priv/                   # Private assets
-│   ├── a20_docs/          # Documentation for RAG
+│   ├── a20_docs/          # Documentation for RAG (markdown files)
+│   ├── a20_index.json     # Built RAG index
 │   └── static/            # Static assets
 └── test/                  # Test files
 ```
@@ -295,15 +315,33 @@ The system uses a 6-step attention process:
 3. **Score Calculation**: Apply formula: `base_weight × (1 + keyword_matches)`
 4. **Softmax Normalization**: Convert raw scores to probabilities
 5. **Expert Selection**: Route to top-k experts based on probabilities
-6. **Aggregate Results**: Combine expert results into final document
+6. **Aggregate Results**: Use LLM judge to intelligently combine expert results
 
 ### Expert Types
 
-- **RAG**: Specialized in augustwenty documentation and business queries
+- **RAG**: Specialized in augustwenty documentation and business queries with semantic search and source citations
 - **Writing**: Content creation, explanations, and prose
 - **Code**: Programming, technical assistance, and development
 - **Math**: Mathematical reasoning, calculations, and analysis
 - **DataViz**: Data visualization, charts, and visual encoding
+
+### RAG System
+
+The RAG (Retrieval-Augmented Generation) expert uses a sophisticated document indexing and search system:
+
+1. **Document Processing**: All markdown files in `priv/a20_docs/` are processed and chunked
+2. **Embedding Generation**: Each chunk is converted to a vector embedding using OpenAI's embedding model
+3. **Index Storage**: Chunks and embeddings are stored in an in-memory ETS table for fast retrieval
+4. **Semantic Search**: User queries are embedded and matched against document chunks using cosine similarity
+5. **Source Citations**: Results include inline citations and a sources list for transparency
+
+### Logging System
+
+The application includes a comprehensive logging system that:
+- Captures expert processing steps in real-time
+- Sends log messages to the LiveView UI for live monitoring
+- Tracks token usage, processing times, and error states
+- Provides detailed debugging information for development
 
 ## Development
 
@@ -340,6 +378,19 @@ mix deps.unlock --unused
 3. Add the expert to the `@experts` list in `lib/moe_rising/gate.ex`
 4. Add the expert to the router in `lib/moe_rising/router.ex`
 
+### Building the RAG Index
+
+To rebuild the RAG index after adding or modifying documents:
+
+```bash
+# Build the index from scratch
+mix moe.rag.build
+
+# The index will be saved to priv/a20_index.json
+```
+
+The RAG system will automatically load the index when the application starts.
+
 ## Troubleshooting
 
 ### Common Issues
@@ -359,6 +410,16 @@ mix deps.unlock --unused
 4. **Dependencies issues**
    - Run `mix deps.clean --all` and `mix deps.get` to reinstall dependencies
    - Ensure you're using the correct Elixir/Erlang versions
+
+5. **RAG index not found**
+   - Run `mix moe.rag.build` to build the RAG index
+   - Ensure the `priv/a20_docs/` directory contains markdown files
+   - Check that `priv/a20_index.json` exists after building
+
+6. **RAG expert not working**
+   - Verify the RAG index is built and loaded
+   - Check that the `MOE_EMBED_MODEL` environment variable is set correctly
+   - Ensure OpenAI API key has sufficient credits for embedding requests
 
 ### Getting Help
 

@@ -12,6 +12,7 @@ defmodule MoeRisingWeb.ReadmeLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="w-full p-6 max-w-6xl mx-auto">
+
         <div class="mb-6">
           <h1 class="text-3xl font-bold mb-2">MoeRising Documentation</h1>
           <p class="text-gray-600">Complete setup and usage guide</p>
@@ -23,14 +24,6 @@ defmodule MoeRisingWeb.ReadmeLive do
           </div>
         </div>
 
-        <div class="mt-6 text-center">
-          <.link
-            navigate={~p"/moe"}
-            class="btn btn-primary"
-          >
-            Try the MoE Demo
-          </.link>
-        </div>
       </div>
     </Layouts.app>
     """

@@ -47,16 +47,19 @@ defmodule MoeRisingWeb.Layouts do
         </a>
       </div>
       <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
+        <ul class="flex flex-column px-1 space-x-2 items-center">
           <li>
-            <.link navigate={~p"/readme"} class="btn btn-ghost">README</.link>
+            <.link navigate={~p"/moe"} class="btn btn-primary btn-sm">MoE Demo</.link>
           </li>
           <li>
-            <a href="https://www.augustwenty.com/" class="btn btn-ghost" target="_blank">Website</a>
+            <.link navigate={~p"/readme"} class="btn btn-outline btn-sm">Setup Guide</.link>
           </li>
           <li>
-            <a href="https://github.com/ddaugher/moe-rising" class="btn btn-ghost" target="_blank">
-              GitHub
+            <.link navigate={~p"/tech-docs"} class="btn btn-outline btn-sm">Technical Docs</.link>
+          </li>
+          <li>
+            <a href="https://github.com/ddaugher/moe-rising" class="btn btn-outline btn-sm" target="_blank">
+              Github
             </a>
           </li>
         </ul>

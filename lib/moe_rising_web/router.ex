@@ -20,6 +20,7 @@ defmodule MoeRisingWeb.Router do
     get "/", PageController, :home
     live "/moe", MoeLive
     live "/readme", ReadmeLive
+    live "/tech-docs", TechDocLive
   end
 
   # Other scopes may use custom stacks.

@@ -1751,9 +1751,6 @@
       margin-block-end: calc(calc(var(--spacing) * 6) * calc(1 - var(--tw-space-y-reverse)));
     }
   }
-  .gap-x-6 {
-    column-gap: calc(var(--spacing) * 6);
-  }
   .space-x-2 {
     :where(& > :not(:last-child)) {
       --tw-space-x-reverse: 0;
@@ -1785,12 +1782,6 @@
   }
   .rounded {
     border-radius: 0.25rem;
-  }
-  .rounded-box {
-    border-radius: var(--radius-box);
-  }
-  .rounded-box {
-    border-radius: var(--radius-box);
   }
   .rounded-full {
     border-radius: calc(infinity * 1px);
@@ -1880,9 +1871,6 @@
   }
   .bg-base-100 {
     background-color: var(--color-base-100);
-  }
-  .bg-base-200 {
-    background-color: var(--color-base-200);
   }
   .bg-base-300 {
     background-color: var(--color-base-300);
@@ -1989,17 +1977,11 @@
   .px-4 {
     padding-inline: calc(var(--spacing) * 4);
   }
-  .px-6 {
-    padding-inline: calc(var(--spacing) * 6);
-  }
   .py-0\.5 {
     padding-block: calc(var(--spacing) * 0.5);
   }
   .py-1 {
     padding-block: calc(var(--spacing) * 1);
-  }
-  .py-4 {
-    padding-block: calc(var(--spacing) * 4);
   }
   .py-6 {
     padding-block: calc(var(--spacing) * 6);
@@ -2181,18 +2163,6 @@
     outline-style: var(--tw-outline-style);
     outline-width: 1px;
   }
-  .btn-ghost {
-    &:not(.btn-active, :hover, :active:focus, :focus-visible) {
-      --btn-shadow: "";
-      --btn-bg: #0000;
-      --btn-border: #0000;
-      --btn-noise: none;
-      &:not(:disabled, [disabled], .btn-disabled) {
-        outline-color: currentColor;
-        --btn-fg: currentColor;
-      }
-    }
-  }
   .brightness-200 {
     --tw-brightness: brightness(200%);
     filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
@@ -2301,10 +2271,6 @@
     --badge-color: var(--color-primary);
     --badge-fg: var(--color-primary-content);
   }
-  .badge-warning {
-    --badge-color: var(--color-warning);
-    --badge-fg: var(--color-warning-content);
-  }
   .btn-primary {
     --btn-color: var(--color-primary);
     --btn-fg: var(--color-primary-content);
@@ -2322,13 +2288,6 @@
   .textarea-error {
     &, &:focus, &:focus-within {
       --input-color: var(--color-error);
-    }
-  }
-  .group-hover\:bg-base-300 {
-    &:is(:where(.group):hover *) {
-      @media (hover: hover) {
-        background-color: var(--color-base-300);
-      }
     }
   }
   .group-hover\:fill-base-content {
@@ -2443,41 +2402,14 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
-  .sm\:grid-cols-3 {
-    @media (width >= 40rem) {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-  .sm\:flex-col {
-    @media (width >= 40rem) {
-      flex-direction: column;
-    }
-  }
   .sm\:px-6 {
     @media (width >= 40rem) {
       padding-inline: calc(var(--spacing) * 6);
     }
   }
-  .sm\:py-6 {
-    @media (width >= 40rem) {
-      padding-block: calc(var(--spacing) * 6);
-    }
-  }
   .sm\:py-28 {
     @media (width >= 40rem) {
       padding-block: calc(var(--spacing) * 28);
-    }
-  }
-  .sm\:group-hover\:scale-105 {
-    @media (width >= 40rem) {
-      &:is(:where(.group):hover *) {
-        @media (hover: hover) {
-          --tw-scale-x: 105%;
-          --tw-scale-y: 105%;
-          --tw-scale-z: 105%;
-          scale: var(--tw-scale-x) var(--tw-scale-y);
-        }
-      }
     }
   }
   .md\:grid-cols-2 {

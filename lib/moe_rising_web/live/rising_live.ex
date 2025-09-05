@@ -236,6 +236,7 @@ defmodule MoeRisingWeb.MoeLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="w-full p-6 space-y-6">
+
         <div class="text-center">
           <h1 class="text-3xl font-bold">Mixture of Experts Demo</h1>
 
