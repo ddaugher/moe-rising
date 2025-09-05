@@ -194,7 +194,7 @@ defmodule MoeRisingWeb.MoeLive do
     task = Task.async(fn -> Router.route(q, log_pid: liveview_pid) end)
 
     # Start a timer to simulate phase progression (slower, more realistic)
-    Process.send_after(self(), :update_processing_phase, 4000)
+    Process.send_after(self(), :update_processing_phase, 1000)
 
     {:noreply,
      socket
@@ -265,14 +265,14 @@ defmodule MoeRisingWeb.MoeLive do
       delay =
         case current_phase do
           # 3 seconds for input analysis
-          :input_analysis -> 3000
+          :input_analysis -> 1000
           # 6 seconds for routing
-          :gate_analysis_complete -> 6000
+          :gate_analysis_complete -> 1000
           # 8 seconds for expert processing
-          :routing_experts -> 8000
+          :routing_experts -> 1000
           # 5 seconds for aggregation
-          :expert_processing -> 5000
-          _ -> 3000
+          :expert_processing -> 1000
+          _ -> 1000
         end
 
       Process.send_after(self(), :update_processing_phase, delay)
