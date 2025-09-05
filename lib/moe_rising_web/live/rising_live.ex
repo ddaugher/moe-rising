@@ -709,22 +709,71 @@ defmodule MoeRisingWeb.MoeLive do
 
                           <%= if Map.get(@attention_analysis.analysis, name) do %>
                             <% expert_analysis = Map.get(@attention_analysis.analysis, name) %>
-                            <div class="text-sm text-gray-600">
-                              <span class="font-medium">Keywords matched:</span> {expert_analysis.hits}
-                              <%= if expert_analysis.hits > 0 do %>
-                                <span class="text-purple-600">
-                                  ({expert_analysis.matched_keywords |> Enum.join(", ")})
-                                </span>
-                              <% else %>
-                                <span class="text-gray-400">(no whole word matches)</span>
+                            <div class="space-y-2">
+                              <div class="text-sm text-gray-600">
+                                <span class="font-medium">Keywords matched:</span> {expert_analysis.hits}
+                                <%= if expert_analysis.hits > 0 do %>
+                                  <span class="text-purple-600">
+                                    ({expert_analysis.matched_keywords |> Enum.join(", ")})
+                                  </span>
+                                <% else %>
+                                  <span class="text-gray-400">(no whole word matches)</span>
+                                <% end %>
+                              </div>
+                              <div class="text-sm text-gray-600">
+                                <span class="font-medium">Raw score:</span> {Float.round(
+                                  expert_analysis.raw_score,
+                                  4
+                                )
+                                |> Float.to_string()}
+                              </div>
+
+                              <!-- Expert-specific details -->
+                              <%= cond do %>
+                                <% name == "RAG" and Map.has_key?(expert_analysis, :rag_details) -> %>
+                                  <% rag_details = expert_analysis.rag_details %>
+                                  <%= if Map.has_key?(rag_details, :error) do %>
+                                    <div class="text-xs text-red-600 bg-red-50 p-2 rounded border">
+                                      <span class="font-medium">RAG Status:</span> {rag_details.error}
+                                    </div>
+                                  <% else %>
+                                    <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border">
+                                      <div class="font-medium mb-1">RAG Search Status:</div>
+                                      <div>✓ Query embedded ({rag_details.vector_length}D) | {rag_details.results_found} results found | Context: {rag_details.context_length} chars</div>
+                                      <%= if rag_details.search_results && length(rag_details.search_results) > 0 do %>
+                                        <div class="mt-1">
+                                          <span class="font-medium">Top scores:</span>
+                                          {rag_details.search_results |> Enum.take(3) |> Enum.map(& &1.score) |> Enum.join(", ")}
+                                        </div>
+                                      <% end %>
+                                    </div>
+                                  <% end %>
+
+                                <% name == "Writing" -> %>
+                                  <div class="text-xs text-green-600 bg-green-50 p-2 rounded border">
+                                    <span class="font-medium">Writing Expert:</span> Ready to help with content creation, summaries, and explanations
+                                  </div>
+
+                                <% name == "Code" -> %>
+                                  <div class="text-xs text-orange-600 bg-orange-50 p-2 rounded border">
+                                    <span class="font-medium">Code Expert:</span> Ready to assist with Elixir, Phoenix, and programming questions
+                                  </div>
+
+                                <% name == "Math" -> %>
+                                  <div class="text-xs text-purple-600 bg-purple-50 p-2 rounded border">
+                                    <span class="font-medium">Math Expert:</span> Ready to solve mathematical problems and calculations
+                                  </div>
+
+                                <% name == "DataViz" -> %>
+                                  <div class="text-xs text-indigo-600 bg-indigo-50 p-2 rounded border">
+                                    <span class="font-medium">DataViz Expert:</span> Ready to help with data visualization and chart creation
+                                  </div>
+
+                                <% true -> %>
+                                  <div class="text-xs text-gray-600 bg-gray-50 p-2 rounded border">
+                                    <span class="font-medium">Expert Status:</span> Ready for processing
+                                  </div>
                               <% end %>
-                            </div>
-                            <div class="text-sm text-gray-600">
-                              <span class="font-medium">Raw score:</span> {Float.round(
-                                expert_analysis.raw_score,
-                                2
-                              )
-                              |> Float.to_string()}
                             </div>
                           <% end %>
                         </div>
