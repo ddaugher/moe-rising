@@ -29,8 +29,8 @@ defmodule MoeRising.Experts.RAG do
     MoeRising.Logging.log("RAG", "Search completed", "found #{length(top)} results")
 
     Enum.with_index(top, 1)
-    |> Enum.each(fn {{score, _chunk}, idx} ->
-      MoeRising.Logging.log("RAG", "Result #{idx}", "score: #{Float.round(score, 4)}")
+    |> Enum.each(fn {{score, chunk}, _idx} ->
+      MoeRising.Logging.log("RAG", "Result #{chunk.title}", "score: #{Float.round(score, 4)}")
     end)
 
     sources_for_ui =
@@ -71,24 +71,6 @@ defmodule MoeRising.Experts.RAG do
     # Start async LLM call
     task = Task.async(fn -> LLMClient.chat!(sys, user) end)
 
-    # Start progress messages concurrently with LLM call
-    progress_task = Task.async(fn ->
-      workshop_activity = [
-        "Setting up the RAG expert workshop...",
-        "Gathering #{Enum.random(10..50)} reference documents...",
-        "Calibrating knowledge retrieval systems...",
-        "Crafting response from retrieved sources...",
-        "Polishing each citation and reference...",
-        "Quality checking #{Enum.random(3..8)} times...",
-        "Packaging final RAG response...",
-        "Ready for expert mixture delivery!"
-      ]
-
-      Enum.each(workshop_activity, fn msg ->
-        MoeRising.Logging.log("RAG", "Status", msg)
-        Process.sleep(2000)
-      end)
-    end)
 
     # Wait for LLM result with timeout
     result = try do
@@ -101,8 +83,6 @@ defmodule MoeRising.Experts.RAG do
         raise "LLM call timed out"
     end
 
-    # Cancel progress task since we got the result
-    Task.shutdown(progress_task, :brutal_kill)
 
     MoeRising.Logging.log(
       "RAG",

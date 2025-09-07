@@ -153,46 +153,6 @@ defmodule MoeRising.Router do
         # Start async LLM call for aggregation
         task = Task.async(fn -> LLMClient.chat!(sys, user) end)
 
-        # Start progress messages concurrently with LLM call
-        progress_task = Task.async(fn ->
-          aggregation_messages = [
-            "Setting up the Expert Mixture workshop...",
-            "Gathering #{Enum.random(2..5)} expert responses...",
-            "Calibrating mixture of experts algorithm...",
-            "Crafting unified response from experts...",
-            "Polishing each expert contribution...",
-            "Quality checking #{Enum.random(3..6)} times...",
-            "Packaging final Mixture response...",
-            "Ready for expert mixture delivery!",
-            "Consulting the council of digital sages...",
-            "Herding the expert opinions into consensus...",
-            "Untangling the threads of wisdom...",
-            "Politely asking the experts to play nice...",
-            "Mediating heated algorithmic debates...",
-            "Conducting a virtual expert roundtable...",
-            "Weighing responses on digital scales...",
-            "Running expert responses through quality control...",
-            "Performing advanced response alchemy...",
-            "Diplomatically resolving expert disagreements...",
-            "Brewing a potent mixture of insights...",
-            "Carefully balancing the expert equation...",
-            "Conducting the orchestra of expert voices...",
-            "Distilling wisdom from multiple sources...",
-            "Channeling the collective expert consciousness...",
-            "Merging expert minds (virtually)...",
-            "Applying rigorous digital peer review...",
-            "Cross-referencing expert perspectives...",
-            "Running expert responses through the truth blender...",
-            "Calibrating the consensus compass...",
-            "Harmonizing discordant expert opinions...",
-            "Finalizing the grand unified response..."
-          ]
-
-          Enum.each(aggregation_messages, fn msg ->
-            MoeRising.Logging.log("Router:aggregate", "Status", msg)
-            Process.sleep(2000)
-          end)
-        end)
 
         # Wait for LLM result with timeout
         result = try do
@@ -205,8 +165,6 @@ defmodule MoeRising.Router do
             raise "LLM call timed out"
         end
 
-        # Cancel progress task since we got the result
-        Task.shutdown(progress_task, :brutal_kill)
 
         MoeRising.Logging.log(
           "Router:aggregate",

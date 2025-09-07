@@ -22,25 +22,6 @@ defmodule MoeRising.Experts.Writing do
     # Start async LLM call
     task = Task.async(fn -> LLMClient.chat!(sys, prompt) end)
 
-    # Send periodic activity messages while waiting
-    messages = [
-      "Setting up the Writing expert workshop...",
-      "Gathering #{Enum.random(5..20)} writing templates...",
-      "Calibrating tone and style parameters...",
-      "Crafting response structure and flow...",
-      "Polishing each sentence for clarity...",
-      "Quality checking #{Enum.random(2..5)} times...",
-      "Packaging final Writing response...",
-      "Ready for expert mixture delivery!"
-    ]
-
-    # Start progress messages concurrently with LLM call
-    progress_task = Task.async(fn ->
-      Enum.each(messages, fn msg ->
-        MoeRising.Logging.log("Writing", "Status", msg)
-        Process.sleep(2000)
-      end)
-    end)
 
     # Wait for LLM result with timeout
     result = try do
@@ -53,8 +34,6 @@ defmodule MoeRising.Experts.Writing do
         raise "LLM call timed out"
     end
 
-    # Cancel progress task since we got the result
-    Task.shutdown(progress_task, :brutal_kill)
 
     MoeRising.Logging.log(
       "Writing",

@@ -616,10 +616,10 @@ defmodule MoeRisingWeb.MoeLive do
         <%= if @attention_analysis != nil do %>
           <div class="space-y-6">
 
-    <!-- 2. Input Prompt Analysis -->
+    <!-- 2. Input Analysis -->
             <%= if phase_comes_before?(:gate_analysis_complete, @processing_phase) do %>
               <div class="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 class="text-lg font-medium text-black mb-3">Input Prompt Analysis</h3>
+                <h3 class="text-lg font-medium text-black mb-3">Input Analysis</h3>
                 <div class="bg-white border rounded p-3">
                   <div class="text-sm text-gray-600 mb-2">Keywords detected and highlighted:</div>
                   <div class="text-gray-800 leading-relaxed">
@@ -754,7 +754,7 @@ defmodule MoeRisingWeb.MoeLive do
                             <div class="text-xs text-gray-600 bg-blue-50 p-2 rounded border">
                               <div class="font-medium mb-1">RAG Search Details:</div>
                               <div>
-                                Query embedded: {if rag_details.query_embedded, do: "✓", else: "✗"} | Vector length: {rag_details.vector_length} | Results found: {rag_details.results_found} | Context length: {rag_details.context_length}
+                                Query embedded: {if rag_details.query_embedded, do: "Yes", else: "No"} | Vector length: {rag_details.vector_length} | Results found: {rag_details.results_found} | Context length: {rag_details.context_length}
                               </div>
                             </div>
 
@@ -792,7 +792,7 @@ defmodule MoeRisingWeb.MoeLive do
                 <div class="space-y-4">
                   <!-- Top Experts with Details -->
                   <div>
-                    <div class="text-sm font-medium text-purple-700 mb-3">
+                    <div class="text-sm font-medium text-black mb-3">
                       Top Experts Selected (Whole Word Matching):
                     </div>
                     <div class="space-y-3">
@@ -849,7 +849,7 @@ defmodule MoeRisingWeb.MoeLive do
                                     <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border">
                                       <div class="font-medium mb-1">RAG Search Status:</div>
                                       <div>
-                                        ✓ Query embedded ({rag_details.vector_length}D) | {rag_details.results_found} results found | Context: {rag_details.context_length} chars
+                                        Query embedded ({rag_details.vector_length}D) | {rag_details.results_found} results found | Context: {rag_details.context_length} chars
                                       </div>
                                       <%= if rag_details.search_results && length(rag_details.search_results) > 0 do %>
                                         <div class="mt-1">
@@ -897,7 +897,7 @@ defmodule MoeRisingWeb.MoeLive do
 
     <!-- Routing Decision -->
                   <div class="bg-white rounded-lg p-3 border border-purple-200">
-                    <div class="text-sm font-medium text-purple-700 mb-2">🚀 Routing Decision:</div>
+                    <div class="text-sm font-medium text-black mb-2">Routing Decision:</div>
                     <div class="text-sm text-gray-700 space-y-3">
                       <div>
                         <p class="mb-2">
@@ -914,7 +914,7 @@ defmodule MoeRisingWeb.MoeLive do
     <!-- Processing Details -->
                       <div class="bg-gray-50 p-3 rounded border">
                         <div class="text-xs font-medium text-gray-700 mb-2">
-                          📊 Processing Details:
+                          Processing Details:
                         </div>
                         <div class="space-y-1 text-xs text-gray-600">
                           <div>
@@ -954,7 +954,7 @@ defmodule MoeRisingWeb.MoeLive do
 
     <!-- Next Steps -->
                       <div class="bg-blue-50 p-3 rounded border">
-                        <div class="text-xs font-medium text-blue-700 mb-1">⏭️ Next Steps:</div>
+                        <div class="text-xs font-medium text-blue-700 mb-1">Next Steps:</div>
                         <div class="text-xs text-blue-600">
                           The selected experts will process your query in parallel, then an LLM judge will aggregate their responses into a final answer.
                         </div>
@@ -981,7 +981,7 @@ defmodule MoeRisingWeb.MoeLive do
                       p≈{Float.round(r.prob, 4) |> Float.to_string()} ·
                       tokens: {r.tokens}
                     </div>
-                    <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= r.output %></pre>
+                    <pre class="whitespace-pre-wrap text-black font-mono text-xs bg-white p-2 border border-gray-200"><%= r.output %></pre>
 
                     <%= if Map.has_key?(r, :sources) and is_list(r.sources) do %>
                       <div class="mt-3 space-y-2">
@@ -1030,7 +1030,7 @@ defmodule MoeRisingWeb.MoeLive do
                   <div class="text-sm text-gray-500 mb-2">
                     strategy: {@res.aggregate.strategy} (from: {@res.aggregate.from})
                   </div>
-                  <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= @res.aggregate.output %></pre>
+                  <pre class="whitespace-pre-wrap text-black font-mono text-xs bg-white p-2 border border-gray-200"><%= @res.aggregate.output %></pre>
                 </div>
               </div>
             <% end %>
@@ -1041,7 +1041,7 @@ defmodule MoeRisingWeb.MoeLive do
         <%= if @processing_phase == :complete and @res != nil do %>
           <div class="text-center py-6 bg-gray-50 border rounded-lg">
             <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-3">
-              ✓
+              Done
             </div>
             <p class="text-gray-700 font-medium">Processing Complete!</p>
             <p class="text-sm text-gray-500 mt-1">Your query has been processed successfully</p>
@@ -1076,9 +1076,9 @@ defmodule MoeRisingWeb.MoeLive do
           <textarea
             id="activity-log"
             readonly
-            class="w-full bg-white text-black font-mono text-xs p-2 border border-gray-200 resize-none overflow-hidden"
-            phx-hook="AutoExpand"
-            rows="1"
+            class="w-full bg-white text-black font-mono text-xs p-2 border border-gray-200 resize-none overflow-y-auto"
+            phx-hook="AutoScroll"
+            rows="10"
           ><%= if length(@log_messages) > 0 do %>
             <%= @log_messages |> Enum.reverse() |> Enum.join("\n") %>
           <% else %>

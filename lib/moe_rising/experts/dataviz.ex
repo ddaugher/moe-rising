@@ -17,25 +17,6 @@ defmodule MoeRising.Experts.DataViz do
     # Start async LLM call
     task = Task.async(fn -> LLMClient.chat!(sys, prompt) end)
 
-    # Send periodic activity messages while waiting
-    messages = [
-      "Setting up the DataViz expert workshop...",
-      "Gathering #{Enum.random(8..25)} visualization patterns...",
-      "Calibrating Vega-Lite rendering engines...",
-      "Crafting visual encoding strategy...",
-      "Polishing each chart and visualization...",
-      "Quality checking #{Enum.random(2..5)} times...",
-      "Packaging final DataViz response...",
-      "Ready for expert mixture delivery!"
-    ]
-
-    # Start progress messages concurrently with LLM call
-    progress_task = Task.async(fn ->
-      Enum.each(messages, fn msg ->
-        MoeRising.Logging.log("DataViz", "Status", msg)
-        Process.sleep(2000)
-      end)
-    end)
 
     # Wait for LLM result with timeout
     result = try do
@@ -48,8 +29,6 @@ defmodule MoeRising.Experts.DataViz do
         raise "LLM call timed out"
     end
 
-    # Cancel progress task since we got the result
-    Task.shutdown(progress_task, :brutal_kill)
 
     MoeRising.Logging.log(
       "DataViz",
