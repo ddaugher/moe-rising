@@ -15,7 +15,6 @@ defmodule MoeRising.Router do
 
   def route(prompt, opts \\ []) do
     top_k = Keyword.get(opts, :top_k, @default_top_k)
-    log_pid = Keyword.get(opts, :log_pid)
     gate = Gate.score(prompt)
 
     chosen =
@@ -23,47 +22,37 @@ defmodule MoeRising.Router do
       |> Enum.take(top_k)
       |> Enum.map(fn {name, p} -> {name, p, Map.fetch!(@experts, name)} end)
 
-    if log_pid do
-      MoeRising.Logging.log(
-        log_pid,
-        "Router",
-        "Selected experts: #{Enum.map(chosen, fn {name, _, _} -> name end) |> Enum.join(", ")}"
-      )
+    MoeRising.Logging.log(
+      "Router",
+      "Selected experts: #{Enum.map(chosen, fn {name, _, _} -> name end) |> Enum.join(", ")}"
+    )
 
-      MoeRising.Logging.log(log_pid, "Router", "Gate probabilities", gate.ranked)
-    end
+    MoeRising.Logging.log("Router", "Gate probabilities", gate.ranked)
 
     results =
       chosen
       |> Task.async_stream(
         fn {name, prob, mod} ->
-          if log_pid do
-            MoeRising.Logging.log(
-              log_pid,
-              "Router",
-              "Starting expert: #{name} (probability: #{Float.round(prob, 3)})"
-            )
-          end
+          MoeRising.Logging.log(
+            "Router",
+            "Starting expert: #{name} (probability: #{Float.round(prob, 3)})"
+          )
 
           try do
-            case mod.call(prompt, log_pid: log_pid) do
+            case mod.call(prompt, log_pid: nil) do
               {:ok, %{output: out, tokens: t} = result} ->
-                if log_pid do
-                  MoeRising.Logging.log(
-                    log_pid,
-                    "Router",
-                    "Completed expert #{name}",
-                    "tokens: #{t}, output length: #{String.length(out)}"
-                  )
+                MoeRising.Logging.log(
+                  "Router",
+                  "Completed expert #{name}",
+                  "tokens: #{t}, output length: #{String.length(out)}"
+                )
 
-                  if Map.has_key?(result, :sources) do
-                    MoeRising.Logging.log(
-                      log_pid,
-                      "Router",
-                      "#{name} sources",
-                      "found #{length(result.sources)} sources"
-                    )
-                  end
+                if Map.has_key?(result, :sources) do
+                  MoeRising.Logging.log(
+                    "Router",
+                    "#{name} sources",
+                    "found #{length(result.sources)} sources"
+                  )
                 end
 
                 expert_result = %{
@@ -74,40 +63,37 @@ defmodule MoeRising.Router do
                   sources: Map.get(result, :sources)
                 }
 
-                # Send individual expert result to LiveView
-                if log_pid do
-                  IO.puts("DEBUG: Sending expert result for #{name} to #{inspect(log_pid)}")
-                  send(log_pid, {:expert_result, expert_result})
-                end
+                # Log expert result completion
+                MoeRising.Logging.log(
+                  "DEBUG",
+                  "Completed expert result for #{name}",
+                  "tokens: #{t}, output length: #{String.length(out)}"
+                )
 
                 expert_result
 
               {:error, reason} ->
-                if log_pid do
-                  MoeRising.Logging.log(log_pid, "Router", "Error in #{name}", reason)
-                end
+                MoeRising.Logging.log("Router", "Error in #{name}", reason)
 
-                expert_result = %{name: name, prob: prob, output: "Error: #{inspect(reason)}", tokens: 0}
-
-                # Send error result to LiveView
-                if log_pid do
-                  send(log_pid, {:expert_result, expert_result})
-                end
+                expert_result = %{
+                  name: name,
+                  prob: prob,
+                  output: "Error: #{inspect(reason)}",
+                  tokens: 0
+                }
 
                 expert_result
             end
           rescue
             e ->
-              if log_pid do
-                MoeRising.Logging.log(log_pid, "Router", "Exception in #{name}", e)
-              end
+              MoeRising.Logging.log("Router", "Exception in #{name}", e)
 
-              expert_result = %{name: name, prob: prob, output: "Exception: #{inspect(e)}", tokens: 0}
-
-              # Send error result to LiveView
-              if log_pid do
-                send(log_pid, {:expert_result, expert_result})
-              end
+              expert_result = %{
+                name: name,
+                prob: prob,
+                output: "Exception: #{inspect(e)}",
+                tokens: 0
+              }
 
               expert_result
           end
@@ -116,16 +102,13 @@ defmodule MoeRising.Router do
       )
       |> Enum.map(fn {:ok, r} -> r end)
 
-    aggregate_result = aggregate(prompt, results, log_pid)
+    aggregate_result = aggregate(prompt, results)
 
-    if log_pid do
-      MoeRising.Logging.log(
-        log_pid,
-        "Router",
-        "Strategy: #{aggregate_result.strategy}",
-        "from: #{aggregate_result.from}"
-      )
-    end
+    MoeRising.Logging.log(
+      "Router",
+      "Strategy: #{aggregate_result.strategy}",
+      "from: #{aggregate_result.from}"
+    )
 
     %{
       gate: gate,
@@ -136,9 +119,9 @@ defmodule MoeRising.Router do
   end
 
   # Simple aggregator: pick highest gate prob; if multiple, prefer longer output
-  defp aggregate(_prompt, [], _log_pid), do: %{strategy: :none, output: ""}
+  defp aggregate(_prompt, []), do: %{strategy: :none, output: ""}
 
-  # defp aggregate(_prompt, results, _log_pid) do
+  # defp aggregate(_prompt, results) do
   #   best =
   #     results
   #     |> Enum.sort_by(fn r -> {r.prob, String.length(r.output)} end, :desc)
@@ -147,18 +130,18 @@ defmodule MoeRising.Router do
   #   %{strategy: :gate_rank, output: best.output, from: best.name}
   # end
 
-  defp aggregate(prompt, results, log_pid) do
+  defp aggregate(prompt, results) do
     case results do
       [] ->
-        MoeRising.Logging.log(log_pid, "Router", "No results")
+        MoeRising.Logging.log("Router:aggregate", "No results")
         %{strategy: :none, output: ""}
 
       [_] = [only] ->
-        MoeRising.Logging.log(log_pid, "Router", "Single result")
+        MoeRising.Logging.log("Router:aggregate", "Single result")
         %{strategy: :single, output: only.output, from: only.name}
 
       _ ->
-        MoeRising.Logging.log(log_pid, "Router", "Multiple results")
+        MoeRising.Logging.log("Router:aggregate", "Multiple results")
         sys = "You are a helpful judge. Combine the best parts concisely."
 
         user =
@@ -167,27 +150,75 @@ defmodule MoeRising.Router do
               "[#{r.name} p=#{Float.round(r.prob, 4)}]\n#{r.output}"
             end)
 
-        # MoeRising.Logging.log(
-        #   log_pid,
-        #   "Router",
-        #   "Aggregating results",
-        #   "prompt: #{prompt}"
-        # )
+        # Start async LLM call for aggregation
+        task = Task.async(fn -> LLMClient.chat!(sys, user) end)
 
-        # MoeRising.Logging.log(
-        #   log_pid,
-        #   "Router",
-        #   "Aggregating results",
-        #   "results: #{inspect(results)}"
-        # )
+        # Start progress messages concurrently with LLM call
+        progress_task = Task.async(fn ->
+          aggregation_messages = [
+            "Setting up the Expert Mixture workshop...",
+            "Gathering #{Enum.random(2..5)} expert responses...",
+            "Calibrating mixture of experts algorithm...",
+            "Crafting unified response from experts...",
+            "Polishing each expert contribution...",
+            "Quality checking #{Enum.random(3..6)} times...",
+            "Packaging final Mixture response...",
+            "Ready for expert mixture delivery!",
+            "Consulting the council of digital sages...",
+            "Herding the expert opinions into consensus...",
+            "Untangling the threads of wisdom...",
+            "Politely asking the experts to play nice...",
+            "Mediating heated algorithmic debates...",
+            "Conducting a virtual expert roundtable...",
+            "Weighing responses on digital scales...",
+            "Running expert responses through quality control...",
+            "Performing advanced response alchemy...",
+            "Diplomatically resolving expert disagreements...",
+            "Brewing a potent mixture of insights...",
+            "Carefully balancing the expert equation...",
+            "Conducting the orchestra of expert voices...",
+            "Distilling wisdom from multiple sources...",
+            "Channeling the collective expert consciousness...",
+            "Merging expert minds (virtually)...",
+            "Applying rigorous digital peer review...",
+            "Cross-referencing expert perspectives...",
+            "Running expert responses through the truth blender...",
+            "Calibrating the consensus compass...",
+            "Harmonizing discordant expert opinions...",
+            "Finalizing the grand unified response..."
+          ]
 
-        %{content: out, tokens: _t} = LLMClient.chat!(sys, user)
+          Enum.each(aggregation_messages, fn msg ->
+            MoeRising.Logging.log("Router:aggregate", "Status", msg)
+            Process.sleep(2000)
+          end)
+        end)
 
-        MoeRising.Logging.log(log_pid, "Router", "Strategy: judge_llm", "output: #{out}")
+        # Wait for LLM result with timeout
+        result = try do
+          case Task.await(task, 60_000) do
+            %{content: out, tokens: t} -> %{content: out, tokens: t}
+          end
+        catch
+          :exit, _ ->
+            MoeRising.Logging.log("Router:aggregate", "LLM call timed out after 30s")
+            raise "LLM call timed out"
+        end
+
+        # Cancel progress task since we got the result
+        Task.shutdown(progress_task, :brutal_kill)
+
+        MoeRising.Logging.log(
+          "Router:aggregate",
+          "LLM completed",
+          "tokens: #{result.tokens}, output length: #{String.length(result.content)}"
+        )
+
+        MoeRising.Logging.log("Router", "Strategy: judge_llm", "output: #{result.content}")
 
         %{
           strategy: :judge_llm,
-          output: out,
+          output: result.content,
           from: Enum.map(results, & &1.name) |> Enum.join(", ")
         }
     end

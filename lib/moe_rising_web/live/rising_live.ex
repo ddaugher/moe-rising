@@ -4,12 +4,18 @@ defmodule MoeRisingWeb.MoeLive do
   alias MoeRising.Gate
 
   def mount(_params, _session, socket) do
+    # Register this LiveView with the console watcher
+    MoeRising.ConsoleWatcher.add_liveview_pid(self())
+
+    # Load existing activity log content
+    existing_logs = load_existing_activity_logs()
+
     {:ok,
      assign(socket,
        q: "",
        res: nil,
        loading: false,
-       log_messages: [],
+       log_messages: existing_logs,
        attention_analysis: nil,
        processing_phase: :idle,
        expert_results: []
@@ -87,15 +93,48 @@ defmodule MoeRisingWeb.MoeLive do
     end
   end
 
+  defp clean_activity_log_content(content) do
+    content
+    |> String.split("\n")
+    |> Enum.map(fn line ->
+      # Remove the [ACTIVITY] prefix from each line
+      if String.starts_with?(line, "[ACTIVITY]") do
+        String.replace_prefix(line, "[ACTIVITY]", "")
+      else
+        line
+      end
+    end)
+    |> Enum.join("\n")
+  end
+
+  defp load_existing_activity_logs do
+    case File.read("console_output.log") do
+      {:ok, content} ->
+        # Filter for activity log entries and clean them
+        content
+        |> String.split("\n")
+        |> Enum.filter(fn line -> String.starts_with?(line, "[ACTIVITY]") end)
+        |> Enum.map(fn line -> String.replace_prefix(line, "[ACTIVITY]", "") end)
+        |> Enum.filter(fn line -> String.length(line) > 0 end)
+        |> Enum.reverse()  # Reverse to show oldest first
+
+      {:error, _} ->
+        []
+    end
+  end
+
   defp get_rag_search_details(prompt) do
     try do
       # Ensure RAG store is loaded
       alias MoeRising.RAG.Store
+
       if !Store.loaded?() do
         case Store.load_from_disk!() do
           {:error, _} ->
             %{error: "RAG index not loaded"}
-          _ -> :ok
+
+          _ ->
+            :ok
         end
       end
 
@@ -178,12 +217,8 @@ defmodule MoeRisingWeb.MoeLive do
   end
 
   def handle_event("route", %{"q" => q}, socket) do
-    # Capture the LiveView process ID
-    liveview_pid = self()
-
     # Add a log message for the new query
     MoeRising.Logging.log(
-      liveview_pid,
       "System",
       "Starting new query: #{String.slice(q, 0, 50)}#{if String.length(q) > 50, do: "...", else: ""}"
     )
@@ -192,10 +227,13 @@ defmodule MoeRisingWeb.MoeLive do
     attention_analysis = analyze_attention(q)
 
     # Start async task to avoid blocking the LiveView
-    task = Task.async(fn -> Router.route(q, log_pid: liveview_pid) end)
+    task = Task.async(fn -> Router.route(q) end)
+
+    # Debug: Log task creation
+    MoeRising.Logging.log("DEBUG", "Task created", "ref: #{inspect(task.ref)}")
 
     # Start a timer to simulate phase progression (slower, more realistic)
-    Process.send_after(self(), :update_processing_phase, 1000)
+    Process.send_after(self(), :update_processing_phase, 2000)
 
     {:noreply,
      socket
@@ -210,34 +248,48 @@ defmodule MoeRisingWeb.MoeLive do
      |> assign(:task, task)}
   end
 
+  def handle_event("clear_log", _params, socket) do
+    # Clear the console log file
+    File.write!("console_output.log", "")
+
+    # Clear the activity log in the UI
+    {:noreply, assign(socket, log_messages: [])}
+  end
+
   def handle_info({ref, result}, %{assigns: %{task: %Task{ref: ref}}} = socket) do
     Process.demonitor(ref, [:flush])
 
     # Add completion message
-    MoeRising.Logging.log(self(), "System", "Query completed successfully")
+    MoeRising.Logging.log("System", "Query completed successfully")
+    MoeRising.Logging.log("DEBUG", "Task completed", "ref: #{inspect(ref)}")
+
+    # Debug: Log the expert results structure
+    MoeRising.Logging.log("DEBUG", "Expert results", "count: #{length(result.results)}")
+    MoeRising.Logging.log("DEBUG", "Result structure", "has_aggregate: #{Map.has_key?(result, :aggregate)}")
 
     {:noreply,
      socket
-     |> assign(res: result, loading: false, processing_phase: :complete)
+     |> assign(
+       res: result,
+       expert_results: result.results,
+       loading: false,
+       processing_phase: :complete
+     )
      |> assign(:task, nil)}
   end
 
-  def handle_info({:log_message, message}, socket) do
-    timestamp = DateTime.utc_now() |> DateTime.to_time() |> Time.to_string()
-    log_entry = "#{timestamp} - #{message}"
+  def handle_info({:console_output, content}, socket) do
+    # Only add non-empty, valid content to avoid junk characters
+    if String.length(content) > 0 and String.valid?(content) do
+      # Strip the [ACTIVITY] prefix from each line for cleaner display
+      cleaned_content = clean_activity_log_content(content)
 
-    {:noreply,
-     socket
-     |> update(:log_messages, fn messages -> [log_entry | messages] end)
-     |> push_event("scroll-log", %{})}
-  end
-
-  def handle_info({:expert_result, expert_result}, socket) do
-    # Add the expert result to our list and update the UI
-    IO.puts("DEBUG: Received expert result for #{expert_result.name}, current count: #{length(socket.assigns.expert_results)}")
-    updated_results = [expert_result | socket.assigns.expert_results]
-    IO.puts("DEBUG: Updated results count: #{length(updated_results)}")
-    {:noreply, assign(socket, expert_results: updated_results)}
+      {:noreply,
+       socket
+       |> update(:log_messages, fn messages -> [cleaned_content | messages] end)}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_info({:console_message, message}, socket) do
@@ -254,7 +306,7 @@ defmodule MoeRisingWeb.MoeLive do
         %{assigns: %{task: %Task{ref: ref}}} = socket
       ) do
     # Add error message
-    MoeRising.Logging.log(self(), "System", "Query failed: #{inspect(reason)}")
+    MoeRising.Logging.log("System", "Query failed: #{inspect(reason)}")
 
     {:noreply,
      socket
@@ -275,13 +327,13 @@ defmodule MoeRisingWeb.MoeLive do
       delay =
         case current_phase do
           # 3 seconds for input analysis
-          :input_analysis -> 1000
+          :input_analysis -> 0
           # 6 seconds for routing
-          :gate_analysis_complete -> 1000
+          :gate_analysis_complete -> 0
           # 8 seconds for expert processing
-          :routing_experts -> 1000
+          :routing_experts -> 0
           # 5 seconds for aggregation
-          :expert_processing -> 1000
+          :expert_processing -> 2000
           _ -> 1000
         end
 
@@ -308,7 +360,6 @@ defmodule MoeRisingWeb.MoeLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="w-full p-6 space-y-6">
-
         <div class="text-center">
           <h1 class="text-3xl font-bold">Mixture of Experts Demo</h1>
 
@@ -317,7 +368,7 @@ defmodule MoeRisingWeb.MoeLive do
             <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6 mt-6">
               <h3 class="text-lg font-medium text-black mb-6 text-center">Attention Process Flow</h3>
 
-              <!-- Horizontal Process Flow - All on same plane -->
+    <!-- Horizontal Process Flow - All on same plane -->
               <div class="flex items-start justify-center space-x-2 mb-6 overflow-x-auto">
                 <!-- Step 1: Input Analysis -->
                 <div class="flex flex-col items-center text-center min-w-[140px]">
@@ -325,101 +376,143 @@ defmodule MoeRisingWeb.MoeLive do
                     1
                   </div>
                   <h4 class="font-semibold text-gray-800 mb-1 text-sm">Input Analysis</h4>
-                  <p class="text-xs text-gray-600 leading-tight">Parse and tokenize the user's prompt</p>
+                  <p class="text-xs text-gray-600 leading-tight">
+                    Parse and tokenize the user's prompt
+                  </p>
                 </div>
 
-                <!-- Arrow 1 -->
+    <!-- Arrow 1 -->
                 <div class="flex items-center justify-center mt-6">
-                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
-                    <line x1="4" y1="8" x2="40" y2="8"/>
-                    <line x1="34" y1="2" x2="40" y2="8"/>
-                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  <svg
+                    class="w-12 h-4 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 48 16"
+                  >
+                    <line x1="4" y1="8" x2="40" y2="8" />
+                    <line x1="34" y1="2" x2="40" y2="8" />
+                    <line x1="34" y1="14" x2="40" y2="8" />
                   </svg>
                 </div>
 
-                <!-- Step 2: Keyword Matching -->
+    <!-- Step 2: Keyword Matching -->
                 <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     2
                   </div>
                   <h4 class="font-semibold text-gray-800 mb-1 text-sm">Keyword Matching</h4>
-                  <p class="text-xs text-gray-600 leading-tight">Count expert-specific keywords in the prompt</p>
+                  <p class="text-xs text-gray-600 leading-tight">
+                    Count expert-specific keywords in the prompt
+                  </p>
                 </div>
 
-                <!-- Arrow 2 -->
+    <!-- Arrow 2 -->
                 <div class="flex items-center justify-center mt-6">
-                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
-                    <line x1="4" y1="8" x2="40" y2="8"/>
-                    <line x1="34" y1="2" x2="40" y2="8"/>
-                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  <svg
+                    class="w-12 h-4 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 48 16"
+                  >
+                    <line x1="4" y1="8" x2="40" y2="8" />
+                    <line x1="34" y1="2" x2="40" y2="8" />
+                    <line x1="34" y1="14" x2="40" y2="8" />
                   </svg>
                 </div>
 
-                <!-- Step 3: Score Calculation -->
+    <!-- Step 3: Score Calculation -->
                 <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     3
                   </div>
                   <h4 class="font-semibold text-gray-800 mb-1 text-sm">Score Calculation</h4>
-                  <p class="text-xs text-gray-600 leading-tight">Apply formula:<br/>base_weight × (1 + keyword_matches)</p>
+                  <p class="text-xs text-gray-600 leading-tight">
+                    Apply formula:<br />base_weight × (1 + keyword_matches)
+                  </p>
                 </div>
 
-                <!-- Arrow 3 -->
+    <!-- Arrow 3 -->
                 <div class="flex items-center justify-center mt-6">
-                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
-                    <line x1="4" y1="8" x2="40" y2="8"/>
-                    <line x1="34" y1="2" x2="40" y2="8"/>
-                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  <svg
+                    class="w-12 h-4 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 48 16"
+                  >
+                    <line x1="4" y1="8" x2="40" y2="8" />
+                    <line x1="34" y1="2" x2="40" y2="8" />
+                    <line x1="34" y1="14" x2="40" y2="8" />
                   </svg>
                 </div>
 
-                <!-- Step 4: Softmax Normalization -->
+    <!-- Step 4: Softmax Normalization -->
                 <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     4
                   </div>
                   <h4 class="font-semibold text-gray-800 mb-1 text-sm">Softmax Normalization</h4>
-                  <p class="text-xs text-gray-600 leading-tight">Convert raw scores to probabilities that sum to 1.0</p>
+                  <p class="text-xs text-gray-600 leading-tight">
+                    Convert raw scores to probabilities that sum to 1.0
+                  </p>
                 </div>
 
-                <!-- Arrow 4 -->
+    <!-- Arrow 4 -->
                 <div class="flex items-center justify-center mt-6">
-                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
-                    <line x1="4" y1="8" x2="40" y2="8"/>
-                    <line x1="34" y1="2" x2="40" y2="8"/>
-                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  <svg
+                    class="w-12 h-4 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 48 16"
+                  >
+                    <line x1="4" y1="8" x2="40" y2="8" />
+                    <line x1="34" y1="2" x2="40" y2="8" />
+                    <line x1="34" y1="14" x2="40" y2="8" />
                   </svg>
                 </div>
 
-                <!-- Step 5: Expert Selection -->
+    <!-- Step 5: Expert Selection -->
                 <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     5
                   </div>
                   <h4 class="font-semibold text-gray-800 mb-1 text-sm">Expert Selection</h4>
-                  <p class="text-xs text-gray-600 leading-tight">Route to top-k experts based on attention probabilities</p>
+                  <p class="text-xs text-gray-600 leading-tight">
+                    Route to top-k experts based on attention probabilities
+                  </p>
                 </div>
 
-                <!-- Arrow 5 -->
+    <!-- Arrow 5 -->
                 <div class="flex items-center justify-center mt-6">
-                  <svg class="w-12 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 48 16">
-                    <line x1="4" y1="8" x2="40" y2="8"/>
-                    <line x1="34" y1="2" x2="40" y2="8"/>
-                    <line x1="34" y1="14" x2="40" y2="8"/>
+                  <svg
+                    class="w-12 h-4 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 48 16"
+                  >
+                    <line x1="4" y1="8" x2="40" y2="8" />
+                    <line x1="34" y1="2" x2="40" y2="8" />
+                    <line x1="34" y1="14" x2="40" y2="8" />
                   </svg>
                 </div>
 
-                <!-- Step 6: Aggregate Results -->
+    <!-- Step 6: Aggregate Results -->
                 <div class="flex flex-col items-center text-center min-w-[140px]">
                   <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-sm mb-2">
                     6
                   </div>
                   <h4 class="font-semibold text-gray-800 mb-1 text-sm">Aggregate Results</h4>
-                  <p class="text-xs text-gray-600 leading-tight">Combine expert results into final document</p>
+                  <p class="text-xs text-gray-600 leading-tight">
+                    Combine expert results into final document
+                  </p>
                 </div>
               </div>
 
-              <!-- Mobile view: Stack vertically with arrows -->
+    <!-- Mobile view: Stack vertically with arrows -->
               <div class="lg:hidden space-y-4">
                 <div class="flex items-center space-x-4">
                   <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
@@ -447,7 +540,9 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                   <div>
                     <h4 class="font-semibold text-gray-800">Score Calculation</h4>
-                    <p class="text-xs text-gray-600">Apply formula: base_weight × (1 + keyword_matches)</p>
+                    <p class="text-xs text-gray-600">
+                      Apply formula: base_weight × (1 + keyword_matches)
+                    </p>
                   </div>
                 </div>
 
@@ -457,7 +552,9 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                   <div>
                     <h4 class="font-semibold text-gray-800">Softmax Normalization</h4>
-                    <p class="text-xs text-gray-600">Convert raw scores to probabilities that sum to 1.0</p>
+                    <p class="text-xs text-gray-600">
+                      Convert raw scores to probabilities that sum to 1.0
+                    </p>
                   </div>
                 </div>
 
@@ -467,7 +564,9 @@ defmodule MoeRisingWeb.MoeLive do
                   </div>
                   <div>
                     <h4 class="font-semibold text-gray-800">Expert Selection</h4>
-                    <p class="text-xs text-gray-600">Route to top-k experts based on attention probabilities</p>
+                    <p class="text-xs text-gray-600">
+                      Route to top-k experts based on attention probabilities
+                    </p>
                   </div>
                 </div>
 
@@ -513,7 +612,6 @@ defmodule MoeRisingWeb.MoeLive do
             <% end %>
           </button>
         </.form>
-
 
         <%= if @attention_analysis != nil do %>
           <div class="space-y-6">
@@ -614,7 +712,6 @@ defmodule MoeRisingWeb.MoeLive do
                             </span>
                           </div>
                         </div>
-
                       </div>
                     </div>
                   <% end %>
@@ -645,7 +742,7 @@ defmodule MoeRisingWeb.MoeLive do
                         </div>
                       </div>
 
-                      <!-- RAG Expert Details -->
+    <!-- RAG Expert Details -->
                       <%= if name == "RAG" and Map.get(@attention_analysis.analysis, "RAG")[:rag_details] do %>
                         <% rag_details = Map.get(@attention_analysis.analysis, "RAG")[:rag_details] %>
                         <%= if Map.has_key?(rag_details, :error) do %>
@@ -656,7 +753,9 @@ defmodule MoeRisingWeb.MoeLive do
                           <div class="mt-3 space-y-2">
                             <div class="text-xs text-gray-600 bg-blue-50 p-2 rounded border">
                               <div class="font-medium mb-1">RAG Search Details:</div>
-                              <div>Query embedded: {if rag_details.query_embedded, do: "✓", else: "✗"} | Vector length: {rag_details.vector_length} | Results found: {rag_details.results_found} | Context length: {rag_details.context_length}</div>
+                              <div>
+                                Query embedded: {if rag_details.query_embedded, do: "✓", else: "✗"} | Vector length: {rag_details.vector_length} | Results found: {rag_details.results_found} | Context length: {rag_details.context_length}
+                              </div>
                             </div>
 
                             <%= if rag_details.search_results && length(rag_details.search_results) > 0 do %>
@@ -738,7 +837,7 @@ defmodule MoeRisingWeb.MoeLive do
                                 |> Float.to_string()}
                               </div>
 
-                              <!-- Expert-specific details -->
+    <!-- Expert-specific details -->
                               <%= cond do %>
                                 <% name == "RAG" and Map.has_key?(expert_analysis, :rag_details) -> %>
                                   <% rag_details = expert_analysis.rag_details %>
@@ -749,39 +848,44 @@ defmodule MoeRisingWeb.MoeLive do
                                   <% else %>
                                     <div class="text-xs text-blue-600 bg-blue-50 p-2 rounded border">
                                       <div class="font-medium mb-1">RAG Search Status:</div>
-                                      <div>✓ Query embedded ({rag_details.vector_length}D) | {rag_details.results_found} results found | Context: {rag_details.context_length} chars</div>
+                                      <div>
+                                        ✓ Query embedded ({rag_details.vector_length}D) | {rag_details.results_found} results found | Context: {rag_details.context_length} chars
+                                      </div>
                                       <%= if rag_details.search_results && length(rag_details.search_results) > 0 do %>
                                         <div class="mt-1">
                                           <span class="font-medium">Top scores:</span>
-                                          {rag_details.search_results |> Enum.take(3) |> Enum.map(& &1.score) |> Enum.join(", ")}
+                                          {rag_details.search_results
+                                          |> Enum.take(3)
+                                          |> Enum.map(& &1.score)
+                                          |> Enum.join(", ")}
                                         </div>
                                       <% end %>
                                     </div>
                                   <% end %>
-
                                 <% name == "Writing" -> %>
                                   <div class="text-xs text-green-600 bg-green-50 p-2 rounded border">
-                                    <span class="font-medium">Writing Expert:</span> Ready to help with content creation, summaries, and explanations
+                                    <span class="font-medium">Writing Expert:</span>
+                                    Ready to help with content creation, summaries, and explanations
                                   </div>
-
                                 <% name == "Code" -> %>
                                   <div class="text-xs text-orange-600 bg-orange-50 p-2 rounded border">
-                                    <span class="font-medium">Code Expert:</span> Ready to assist with Elixir, Phoenix, and programming questions
+                                    <span class="font-medium">Code Expert:</span>
+                                    Ready to assist with Elixir, Phoenix, and programming questions
                                   </div>
-
                                 <% name == "Math" -> %>
                                   <div class="text-xs text-purple-600 bg-purple-50 p-2 rounded border">
-                                    <span class="font-medium">Math Expert:</span> Ready to solve mathematical problems and calculations
+                                    <span class="font-medium">Math Expert:</span>
+                                    Ready to solve mathematical problems and calculations
                                   </div>
-
                                 <% name == "DataViz" -> %>
                                   <div class="text-xs text-indigo-600 bg-indigo-50 p-2 rounded border">
-                                    <span class="font-medium">DataViz Expert:</span> Ready to help with data visualization and chart creation
+                                    <span class="font-medium">DataViz Expert:</span>
+                                    Ready to help with data visualization and chart creation
                                   </div>
-
                                 <% true -> %>
                                   <div class="text-xs text-gray-600 bg-gray-50 p-2 rounded border">
-                                    <span class="font-medium">Expert Status:</span> Ready for processing
+                                    <span class="font-medium">Expert Status:</span>
+                                    Ready for processing
                                   </div>
                               <% end %>
                             </div>
@@ -807,24 +911,48 @@ defmodule MoeRisingWeb.MoeLive do
                         </p>
                       </div>
 
-                      <!-- Processing Details -->
+    <!-- Processing Details -->
                       <div class="bg-gray-50 p-3 rounded border">
-                        <div class="text-xs font-medium text-gray-700 mb-2">📊 Processing Details:</div>
+                        <div class="text-xs font-medium text-gray-700 mb-2">
+                          📊 Processing Details:
+                        </div>
                         <div class="space-y-1 text-xs text-gray-600">
-                          <div>• <span class="font-medium">Query length:</span> {String.length(@attention_analysis.prompt)} characters</div>
-                          <div>• <span class="font-medium">Total experts evaluated:</span> {length(@attention_analysis.gate_result.ranked)}</div>
-                          <div>• <span class="font-medium">Experts selected:</span> {length(Enum.take(@attention_analysis.gate_result.ranked, 2))}</div>
-                          <div>• <span class="font-medium">Softmax normalization:</span> Applied to raw scores</div>
+                          <div>
+                            •
+                            <span class="font-medium">Query length:</span> {String.length(
+                              @attention_analysis.prompt
+                            )} characters
+                          </div>
+                          <div>
+                            •
+                            <span class="font-medium">Total experts evaluated:</span> {length(
+                              @attention_analysis.gate_result.ranked
+                            )}
+                          </div>
+                          <div>
+                            •
+                            <span class="font-medium">Experts selected:</span> {length(
+                              Enum.take(@attention_analysis.gate_result.ranked, 2)
+                            )}
+                          </div>
+                          <div>
+                            • <span class="font-medium">Softmax normalization:</span>
+                            Applied to raw scores
+                          </div>
                           <%= if Map.get(@attention_analysis.analysis, "RAG")[:rag_details] do %>
-                            <% rag_details = Map.get(@attention_analysis.analysis, "RAG")[:rag_details] %>
+                            <% rag_details =
+                              Map.get(@attention_analysis.analysis, "RAG")[:rag_details] %>
                             <%= if !Map.has_key?(rag_details, :error) do %>
-                              <div>• <span class="font-medium">RAG index status:</span> Loaded ({rag_details.results_found} documents available)</div>
+                              <div>
+                                • <span class="font-medium">RAG index status:</span>
+                                Loaded ({rag_details.results_found} documents available)
+                              </div>
                             <% end %>
                           <% end %>
                         </div>
                       </div>
 
-                      <!-- Next Steps -->
+    <!-- Next Steps -->
                       <div class="bg-blue-50 p-3 rounded border">
                         <div class="text-xs font-medium text-blue-700 mb-1">⏭️ Next Steps:</div>
                         <div class="text-xs text-blue-600">
@@ -839,56 +967,62 @@ defmodule MoeRisingWeb.MoeLive do
           </div>
         <% end %>
 
-        <!-- 5. Expert Outputs Top-2 -->
-        <%= if @expert_results && length(@expert_results) > 0 do %>
+    <!-- 5. Expert Outputs Top-2 -->
+        <!-- Debug: expert_results = <%= inspect(@expert_results) %> -->
+        <%= if @expert_results && @expert_results != [] do %>
           <div class="space-y-6">
-              <div>
-                <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
-                <div class="grid md:grid-cols-2 gap-4">
-                  <%= for r <- @expert_results do %>
-                    <div class="border rounded-lg p-4 shadow-sm bg-white">
-                      <div class="text-sm text-gray-500 mb-2">
-                        Expert: <span class="font-medium">{r.name}</span> ·
-                        p≈{Float.round(r.prob, 4) |> Float.to_string()} ·
-                        tokens: {r.tokens}
-                      </div>
-                      <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= r.output %></pre>
-
-                      <%= if Map.has_key?(r, :sources) and is_list(r.sources) do %>
-                        <div class="mt-3 space-y-2">
-                          <div class="text-sm font-medium">Retrieved Sources</div>
-                          <div class="grid gap-2">
-                            <%= for s <- r.sources do %>
-                              <div class={"rounded border p-2 #{source_bg_color(s.score, Enum.map(r.sources, & &1.score))}"}>
-                                <div class="flex items-center justify-between text-xs text-gray-600">
-                                  <span>
-                                    [{s.idx}] score ≈ {Float.round(s.score, 3) |> Float.to_string()}
-                                  </span>
-                                  <a
-                                    href={s.url}
-                                    class="underline hover:text-orange-600"
-                                    target="_blank"
-                                  >
-                                    open
-                                  </a>
-                                </div>
-                                <div class="text-sm font-semibold mt-1">{s.title}</div>
-                                <div class="text-xs text-gray-700 mt-1">{s.preview}…</div>
-                              </div>
-                            <% end %>
-                          </div>
-                        </div>
-                      <% end %>
+            <div>
+              <h2 class="text-xl font-semibold mb-3">Expert Outputs Top-2</h2>
+              <div class="grid md:grid-cols-2 gap-4">
+                <%= for r <- @expert_results do %>
+                  <div class="border rounded-lg p-4 shadow-sm bg-white">
+                    <div class="text-sm text-gray-500 mb-2">
+                      Expert: <span class="font-medium">{r.name}</span> ·
+                      p≈{Float.round(r.prob, 4) |> Float.to_string()} ·
+                      tokens: {r.tokens}
                     </div>
-                  <% end %>
-                </div>
+                    <pre class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"><%= r.output %></pre>
+
+                    <%= if Map.has_key?(r, :sources) and is_list(r.sources) do %>
+                      <div class="mt-3 space-y-2">
+                        <div class="text-sm font-medium">Retrieved Sources</div>
+                        <div class="space-y-2 max-w-full">
+                          <%= for s <- r.sources do %>
+                            <div class={"rounded border p-2 min-w-0 #{source_bg_color(s.score, Enum.map(r.sources, & &1.score))}"}>
+                              <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+                                <span class="flex-shrink-0">
+                                  [{s.idx}] score ≈ {Float.round(s.score, 3) |> Float.to_string()}
+                                </span>
+                                <a
+                                  href={s.url}
+                                  class="underline hover:text-orange-600 flex-shrink-0 ml-2"
+                                  target="_blank"
+                                >
+                                  open
+                                </a>
+                              </div>
+                              <div class="text-sm font-semibold mt-1 break-words overflow-hidden">
+                                {s.title}
+                              </div>
+                              <div class="text-xs text-gray-700 mt-1 break-words overflow-hidden line-clamp-3">
+                                {s.preview}…
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
               </div>
+            </div>
           </div>
         <% end %>
 
         <%= if @res do %>
           <div class="space-y-6">
-    <!-- 6. Final Answer -->
+            <!-- 6. Final Answer -->
+            <!-- Debug: res = <%= inspect(@res) %>, phase = <%= @processing_phase %> -->
             <%= if @res && @res.aggregate && @processing_phase == :complete do %>
               <div>
                 <h2 class="text-xl font-semibold mb-3">Final Answer</h2>
@@ -927,26 +1061,29 @@ defmodule MoeRisingWeb.MoeLive do
 
     <!-- Activity Log - Always visible -->
         <div class="border border-gray-300 p-2 bg-white">
-          <h3 class="text-sm font-semibold mb-2 text-black">
-            Activity Log ({length(@log_messages)} messages)
-          </h3>
-          <div
-            id="activity-log"
-            class="max-h-60 overflow-y-auto space-y-0 bg-white text-black font-mono text-xs p-2 border border-gray-200"
-            phx-hook="AutoScroll"
-          >
-            <%= if length(@log_messages) > 0 do %>
-              <%= for message <- Enum.reverse(@log_messages) do %>
-                <div class="text-black">
-                  {message}
-                </div>
-              <% end %>
-            <% else %>
-              <div class="text-gray-600">
-                No activity yet...
-              </div>
-            <% end %>
+          <div class="mb-2">
+            <h3 class="text-sm font-semibold text-black inline">
+              Activity Log
+            </h3>
+            <button
+              type="button"
+              phx-click="clear_log"
+              class="ml-2 px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-300 transition-colors"
+            >
+              Clear Log
+            </button>
           </div>
+          <textarea
+            id="activity-log"
+            readonly
+            class="w-full bg-white text-black font-mono text-xs p-2 border border-gray-200 resize-none overflow-hidden"
+            phx-hook="AutoExpand"
+            rows="1"
+          ><%= if length(@log_messages) > 0 do %>
+            <%= @log_messages |> Enum.reverse() |> Enum.join("\n") %>
+          <% else %>
+            No activity yet...
+          <% end %></textarea>
         </div>
       </div>
     </Layouts.app>

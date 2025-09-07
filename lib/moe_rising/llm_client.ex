@@ -49,7 +49,7 @@ defmodule MoeRising.LLMClient do
           {"authorization", "Bearer #{api_key}"},
           {"content-type", "application/json"}
         ],
-        receive_timeout: 30_000
+        receive_timeout: 60_000
       )
 
     for item <- get_in(resp.body, ["data"]) do

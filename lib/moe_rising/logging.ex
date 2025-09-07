@@ -1,30 +1,28 @@
 defmodule MoeRising.Logging do
   @moduledoc """
-  Logging system that can capture messages and send them to LiveView processes.
+  Logging system that writes messages to console_output.log for the activity log.
   """
 
-  def log(process_pid, message) when is_pid(process_pid) do
-    if Process.alive?(process_pid) do
-      IO.puts("LOGGING: Sending message to #{inspect(process_pid)}: #{message}")
-      send(process_pid, {:log_message, message})
-    else
-      IO.puts("LOGGING: Process #{inspect(process_pid)} is not alive")
-    end
+  # Prefix to identify activity log entries
+  @activity_log_prefix "[ACTIVITY]"
+
+  def log(message) do
+    # Write to console output file for activity log
+    timestamp = DateTime.utc_now() |> DateTime.to_time() |> Time.to_string()
+    formatted_message = "#{@activity_log_prefix} [#{timestamp}] #{message}"
+    File.write!("console_output.log", formatted_message <> "\n", [:append])
+
+    # Small delay to ensure file write is complete before ConsoleWatcher reads it
+    Process.sleep(10)
   end
 
-  def log(process_pid, label, data) when is_pid(process_pid) do
+  def log(label, data) do
     message = "#{label}: #{inspect(data)}"
-    log(process_pid, message)
+    log(message)
   end
 
-  def log(process_pid, label, data, metadata) when is_pid(process_pid) do
+  def log(label, data, metadata) do
     message = "#{label}: #{inspect(data)} - #{inspect(metadata)}"
-    log(process_pid, message)
-  end
-
-  def console_log(process_pid, message) when is_pid(process_pid) do
-    if Process.alive?(process_pid) do
-      send(process_pid, {:console_message, message})
-    end
+    log(message)
   end
 end

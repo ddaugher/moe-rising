@@ -11,6 +11,8 @@ defmodule MoeRising.Application do
       MoeRisingWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:moe_rising, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: MoeRising.PubSub},
+      # Start the console watcher for activity log
+      MoeRising.ConsoleWatcher,
       # Start a worker by calling: MoeRising.Worker.start_link(arg)
       # {MoeRising.Worker, arg},
       # Start to serve requests, typically the last entry

@@ -63,11 +63,28 @@ const AutoScrollToProcessing = {
   }
 }
 
+const AutoExpand = {
+  mounted() {
+    this.adjustHeight()
+  },
+  
+  updated() {
+    this.adjustHeight()
+  },
+  
+  adjustHeight() {
+    // Reset height to auto to get the correct scrollHeight
+    this.el.style.height = 'auto'
+    // Set height to scrollHeight to fit content
+    this.el.style.height = this.el.scrollHeight + 'px'
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {AutoScroll, AutoScrollToProcessing, ...colocatedHooks},
+  hooks: {AutoScroll, AutoScrollToProcessing, AutoExpand, ...colocatedHooks},
 })
 
 // Show progress bar on live navigation and form submits

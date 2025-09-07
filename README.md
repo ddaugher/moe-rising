@@ -13,7 +13,7 @@ A Phoenix LiveView application that demonstrates a Mixture of Experts (MoE) syst
   - **Math**: Mathematical reasoning and calculations
   - **DataViz**: Data visualization and charting
 - **Interactive UI**: Phoenix LiveView interface with real-time updates and activity logging
-- **Real-time Logging System**: Comprehensive logging that captures expert processing steps and sends updates to the UI
+- **Real-time Logging System**: File-based logging system that captures expert processing steps and displays them in the activity log
 - **Advanced Aggregation**: Uses an LLM judge to intelligently combine results from multiple experts
 
 ## Prerequisites
@@ -222,12 +222,35 @@ mix precommit
 1. **Start the Phoenix server**
 
 ```bash
-# Option 1: Start with mix
+# Option 1: Start with console output logging (recommended for demos)
+./start_with_console_log.sh
+
+# Option 2: Start with mix (standard development)
 mix phx.server
 
-# Option 2: Start with IEx (Interactive Elixir) for debugging
+# Option 3: Start with IEx (Interactive Elixir) for debugging
 iex -S mix phx.server
 ```
+
+**Note**: The `start_with_console_log.sh` script redirects all console output to `console_output.log`, which allows the activity log to display real-time console output. This is particularly useful for live demos to show that the system is actively processing.
+
+#### Console Output Logging
+
+For live demos or when you want to see all console output in the activity log:
+
+```bash
+# Make the script executable (first time only)
+chmod +x start_with_console_log.sh
+
+# Start with console output logging
+./start_with_console_log.sh
+```
+
+This script:
+- Redirects all Phoenix server output to `console_output.log`
+- Uses `tee` to display output in the terminal AND save to file
+- Allows the activity log to show real-time console output
+- Perfect for demonstrating that the system is actively processing
 
 2. **Access the application**
 
@@ -277,7 +300,8 @@ moe-rising/
 │   │   ├── gate.ex          # Attention mechanism and expert scoring
 │   │   ├── router.ex        # Expert routing logic with LLM aggregation
 │   │   ├── llm_client.ex    # OpenAI API client
-│   │   ├── logging.ex       # Real-time logging system
+│   │   ├── logging.ex       # File-based logging system
+│   │   ├── console_watcher.ex # Console output file monitoring
 │   │   ├── experts/         # Expert implementations
 │   │   │   ├── rag.ex       # RAG expert with semantic search
 │   │   │   ├── writing.ex   # Writing expert
@@ -337,11 +361,13 @@ The RAG (Retrieval-Augmented Generation) expert uses a sophisticated document in
 
 ### Logging System
 
-The application includes a comprehensive logging system that:
-- Captures expert processing steps in real-time
-- Sends log messages to the LiveView UI for live monitoring
+The application includes a file-based logging system that:
+- Writes all log messages to `console_output.log`
+- Uses a `ConsoleWatcher` GenServer to monitor the log file
+- Sends new log content to LiveView processes in real-time
 - Tracks token usage, processing times, and error states
 - Provides detailed debugging information for development
+- Works with the `start_with_console_log.sh` script to capture all console output
 
 ## Development
 
@@ -420,6 +446,12 @@ The RAG system will automatically load the index when the application starts.
    - Verify the RAG index is built and loaded
    - Check that the `MOE_EMBED_MODEL` environment variable is set correctly
    - Ensure OpenAI API key has sufficient credits for embedding requests
+
+7. **Activity log not showing console output**
+   - Ensure you're using `./start_with_console_log.sh` to start the server
+   - Check that `console_output.log` file exists and has content
+   - Verify that you have an active LiveView session (visit `/moe` page)
+   - The ConsoleWatcher polls every 500ms, so there may be a slight delay
 
 ### Getting Help
 

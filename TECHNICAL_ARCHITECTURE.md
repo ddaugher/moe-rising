@@ -181,18 +181,35 @@ Unified interface for OpenAI API interactions:
 
 ### 7. Logging System (`MoeRising.Logging`)
 
-Real-time logging that sends messages to LiveView processes:
+File-based logging system that writes to `console_output.log`:
 
 #### Features:
-- Process-aware logging (only sends to alive processes)
+- File-based logging to `console_output.log`
 - Multiple log levels: simple messages, labeled data, metadata
-- Console logging for debugging
-- Automatic timestamping in UI
+- Automatic timestamping
+- Works with console output redirection for comprehensive logging
 
 #### Usage:
 ```elixir
-MoeRising.Logging.log(pid, "Expert", "Processing started", "prompt length: #{length}")
+MoeRising.Logging.log("Expert", "Processing started", "prompt length: #{length}")
 ```
+
+### 8. Console Watcher (`MoeRising.ConsoleWatcher`)
+
+GenServer that monitors the console output file and sends updates to LiveView processes:
+
+#### Features:
+- Polls `console_output.log` every 500ms for new content
+- Manages registered LiveView process PIDs
+- Sends `{:console_output, content}` messages to active LiveViews
+- Handles file truncation and reset scenarios
+- Automatic cleanup of dead processes
+
+#### Process Flow:
+1. LiveView registers itself during `mount/3`
+2. ConsoleWatcher polls the log file for changes
+3. New content is sent to all registered LiveView processes
+4. LiveView displays the content in the activity log
 
 ## Web Layer (`lib/moe_rising_web/`)
 
@@ -232,10 +249,10 @@ MoeRising.Logging.log(pid, "Expert", "Processing started", "prompt length: #{len
 - Source citations for RAG results
 
 #### Activity Logging:
-- Real-time log messages with timestamps
-- Color-coded log levels
+- Real-time log messages from `console_output.log`
+- Auto-expanding textarea that grows with content
 - Automatic scrolling to latest entries
-- Process monitoring information
+- Console output integration via ConsoleWatcher
 
 ## Data Flow
 
@@ -367,10 +384,12 @@ MoeRising.Logging.log(pid, "Expert", "Processing started", "prompt length: #{len
 ## Monitoring and Observability
 
 ### Logging:
-- Real-time activity logging
+- File-based activity logging to `console_output.log`
+- ConsoleWatcher for real-time LiveView updates
 - Expert execution tracking
 - Token usage monitoring
 - Error capture and reporting
+- Console output redirection support
 
 ### Metrics:
 - Phoenix LiveDashboard integration

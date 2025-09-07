@@ -12,7 +12,6 @@ defmodule MoeRisingWeb.TechDocLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="w-full p-6 max-w-6xl mx-auto">
-
         <div class="mb-6">
           <h1 class="text-3xl font-bold mb-2">MoeRising Technical Architecture</h1>
           <p class="text-gray-600">Complete technical documentation and system architecture</p>
@@ -23,7 +22,6 @@ defmodule MoeRisingWeb.TechDocLive do
             {Phoenix.HTML.raw(@tech_doc_content)}
           </div>
         </div>
-
       </div>
     </Layouts.app>
     """
@@ -32,10 +30,14 @@ defmodule MoeRisingWeb.TechDocLive do
   defp load_tech_doc_content do
     # Try multiple possible paths for the technical architecture file
     possible_paths = [
-      Path.join(File.cwd!(), "TECHNICAL_ARCHITECTURE.md"),  # Current working directory
-      Path.join(Application.app_dir(:moe_rising), "../TECHNICAL_ARCHITECTURE.md"),  # Relative to app dir
-      Path.join(Application.app_dir(:moe_rising), "../../TECHNICAL_ARCHITECTURE.md"),  # One level up
-      "TECHNICAL_ARCHITECTURE.md"  # Just the filename in case we're in the right directory
+      # Current working directory
+      Path.join(File.cwd!(), "TECHNICAL_ARCHITECTURE.md"),
+      # Relative to app dir
+      Path.join(Application.app_dir(:moe_rising), "../TECHNICAL_ARCHITECTURE.md"),
+      # One level up
+      Path.join(Application.app_dir(:moe_rising), "../../TECHNICAL_ARCHITECTURE.md"),
+      # Just the filename in case we're in the right directory
+      "TECHNICAL_ARCHITECTURE.md"
     ]
 
     tech_doc_path = Enum.find(possible_paths, &File.exists?/1)

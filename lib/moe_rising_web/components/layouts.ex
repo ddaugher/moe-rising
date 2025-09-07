@@ -43,7 +43,9 @@ defmodule MoeRisingWeb.Layouts do
           target="_blank"
         >
           <img src={~p"/images/a20-full-lockup-onlight.png"} width="120" />
-          <span class="text-sm font-semibold">v{Application.spec(:moe_rising, :vsn) |> to_string()}</span>
+          <span class="text-sm font-semibold">
+            v{Application.spec(:moe_rising, :vsn) |> to_string()}
+          </span>
         </a>
       </div>
       <div class="flex-none">
@@ -58,7 +60,11 @@ defmodule MoeRisingWeb.Layouts do
             <.link navigate={~p"/tech-docs"} class="btn btn-outline btn-sm">Technical Docs</.link>
           </li>
           <li>
-            <a href="https://github.com/ddaugher/moe-rising" class="btn btn-outline btn-sm" target="_blank">
+            <a
+              href="https://github.com/ddaugher/moe-rising"
+              class="btn btn-outline btn-sm"
+              target="_blank"
+            >
               Github
             </a>
           </li>

@@ -12,7 +12,6 @@ defmodule MoeRisingWeb.ReadmeLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="w-full p-6 max-w-6xl mx-auto">
-
         <div class="mb-6">
           <h1 class="text-3xl font-bold mb-2">MoeRising Documentation</h1>
           <p class="text-gray-600">Complete setup and usage guide</p>
@@ -23,7 +22,6 @@ defmodule MoeRisingWeb.ReadmeLive do
             {Phoenix.HTML.raw(@readme_content)}
           </div>
         </div>
-
       </div>
     </Layouts.app>
     """
@@ -32,10 +30,14 @@ defmodule MoeRisingWeb.ReadmeLive do
   defp load_readme_content do
     # Try multiple possible paths for the README file
     possible_paths = [
-      Path.join(File.cwd!(), "README.md"),  # Current working directory
-      Path.join(Application.app_dir(:moe_rising), "../README.md"),  # Relative to app dir
-      Path.join(Application.app_dir(:moe_rising), "../../README.md"),  # One level up
-      "README.md"  # Just the filename in case we're in the right directory
+      # Current working directory
+      Path.join(File.cwd!(), "README.md"),
+      # Relative to app dir
+      Path.join(Application.app_dir(:moe_rising), "../README.md"),
+      # One level up
+      Path.join(Application.app_dir(:moe_rising), "../../README.md"),
+      # Just the filename in case we're in the right directory
+      "README.md"
     ]
 
     readme_path = Enum.find(possible_paths, &File.exists?/1)
