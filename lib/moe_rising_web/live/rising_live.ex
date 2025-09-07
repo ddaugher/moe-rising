@@ -1060,7 +1060,7 @@ defmodule MoeRisingWeb.MoeLive do
         <% end %>
 
     <!-- Activity Log - Always visible -->
-        <div class="border border-gray-300 p-2 bg-white">
+        <div class="border border-gray-200 rounded-lg p-4 bg-white">
           <div class="mb-2">
             <h3 class="text-sm font-semibold text-black inline">
               Activity Log
@@ -1076,7 +1076,7 @@ defmodule MoeRisingWeb.MoeLive do
           <textarea
             id="activity-log"
             readonly
-            class="w-full bg-white text-black font-mono text-xs p-2 border border-gray-200 resize-none overflow-y-auto"
+            class="w-full bg-white text-black font-mono text-xs p-2 border border-gray-200 rounded-lg resize-none overflow-y-auto"
             phx-hook="AutoScroll"
             rows="10"
           ><%= if length(@log_messages) > 0 do %>
