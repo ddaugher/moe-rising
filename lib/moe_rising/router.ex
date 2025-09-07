@@ -1,9 +1,10 @@
 defmodule MoeRising.Router do
   alias MoeRising.Gate
   alias MoeRising.LLMClient
-  alias MoeRising.Experts.{Writing, Code, Math, DataViz, RAG}
+  alias MoeRising.Experts.{Generic, Writing, Code, Math, DataViz, RAG}
 
   @experts %{
+    "Generic" => Generic,
     "Writing" => Writing,
     "Code" => Code,
     "Math" => Math,
